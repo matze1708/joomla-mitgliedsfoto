@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" method="upgrade">
+	<name>com_mitgliedsfoto</name>
+	<author>Schützenverein Volker Alzey 1952 e.V.</author>
+	<creationDate>2026-11</creationDate>
+	<copyright>(C) 2026 Schützenverein Volker Alzey 1952 e.V.</copyright>
+	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+	<version>1.0.0</version>
+	<description>COM_MITGLIEDSFOTO_XML_DESCRIPTION</description>
+	<namespace path="src">SvAlzey\Component\Mitgliedsfoto</namespace>
+	<scriptfile>script.php</scriptfile>
+
+	<install>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+		</sql>
+	</install>
+	<uninstall>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+		</sql>
+	</uninstall>
+
+	<files folder="site">
+		<folder>src</folder>
+		<folder>tmpl</folder>
+	</files>
+
+	<media destination="com_mitgliedsfoto" folder="media">
+		<folder>css</folder>
+		<folder>js</folder>
+		<filename>joomla.asset.json</filename>
+	</media>
+
+	<administration>
+		<menu>COM_MITGLIEDSFOTO_MENU</menu>
+		<files folder="admin">
+			<filename>access.xml</filename>
+			<filename>config.xml</filename>
+			<folder>forms</folder>
+			<folder>layouts</folder>
+			<folder>services</folder>
+			<folder>sql</folder>
+			<folder>src</folder>
+			<folder>tmpl</folder>
+		</files>
+		<languages folder="admin/language">
+			<language tag="de-DE">de-DE/com_mitgliedsfoto.ini</language>
+			<language tag="de-DE">de-DE/com_mitgliedsfoto.sys.ini</language>
+		</languages>
+	</administration>
+</extension>

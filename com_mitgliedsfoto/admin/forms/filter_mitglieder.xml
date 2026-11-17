@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+	<fields name="filter">
+		<field name="search" type="text" label="COM_MITGLIEDSFOTO_SUCHE" hint="COM_MITGLIEDSFOTO_SUCHE_HINT" />
+		<field name="status" type="list" label="COM_MITGLIEDSFOTO_STATUS" onchange="this.form.submit();">
+			<option value="">COM_MITGLIEDSFOTO_FILTER_STATUS</option>
+			<option value="offen">COM_MITGLIEDSFOTO_STATUS_OFFEN</option>
+			<option value="eingereicht">COM_MITGLIEDSFOTO_STATUS_EINGEREICHT</option>
+			<option value="vorstand">COM_MITGLIEDSFOTO_STATUS_VORSTAND</option>
+			<option value="geloescht">COM_MITGLIEDSFOTO_STATUS_GELOESCHT</option>
+			<option value="mailfehler">COM_MITGLIEDSFOTO_STATUS_MAILFEHLER</option>
+		</field>
+	</fields>
+	<fields name="list">
+		<field name="limit" type="limitbox" label="JGLOBAL_LIST_LIMIT" default="25" onchange="this.form.submit();" />
+	</fields>
+</form>

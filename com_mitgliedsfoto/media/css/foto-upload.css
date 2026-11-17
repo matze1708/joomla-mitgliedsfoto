@@ -1,0 +1,6 @@
+.mf-uploader .mf-crop { max-width: 480px; aspect-ratio: 3 / 4; background: #f1f1f1; }
+.mf-uploader .mf-crop img { display: block; max-width: 100%; }
+.mf-uploader .mf-vorschau { width: 150px; height: 200px; overflow: hidden; border: 1px solid #aaa; background: #fff; }
+.mf-uploader .mf-vorschau img { max-width: none; }
+.mf-uploader label.btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.mf-uploader label.btn:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }

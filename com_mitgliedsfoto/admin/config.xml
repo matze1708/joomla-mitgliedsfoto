@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<fieldset name="mitglieder" label="COM_MITGLIEDSFOTO_CFG_MITGLIEDER" description="COM_MITGLIEDSFOTO_CFG_MITGLIEDER_DESC">
+		<field name="tabelle" type="text" label="COM_MITGLIEDSFOTO_CFG_TABELLE" description="COM_MITGLIEDSFOTO_CFG_TABELLE_DESC" hint="#__mitglieder" default="" />
+		<field name="spalte_nr" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_NR" default="" />
+		<field name="spalte_vorname" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_VORNAME" default="" />
+		<field name="spalte_nachname" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_NACHNAME" default="" />
+		<field name="spalte_eintritt" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_EINTRITT" default="" />
+		<field name="spalte_geburtsdatum" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_GEBURTSDATUM" description="COM_MITGLIEDSFOTO_CFG_SPALTE_GEBURTSDATUM_DESC" default="" />
+		<field name="spalte_email" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_EMAIL" description="COM_MITGLIEDSFOTO_CFG_SPALTE_EMAIL_DESC" default="" />
+	</fieldset>
+
+	<fieldset name="foto" label="COM_MITGLIEDSFOTO_CFG_FOTO" description="COM_MITGLIEDSFOTO_CFG_FOTO_DESC">
+		<field name="speicherordner" type="text" label="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER" description="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER_DESC" default="" />
+		<field name="max_upload_kb" type="number" label="COM_MITGLIEDSFOTO_CFG_MAX_UPLOAD" default="8192" min="100" max="30000" filter="integer" />
+		<field name="min_breite" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_BREITE" description="COM_MITGLIEDSFOTO_CFG_MIN_DESC" default="360" min="150" max="600" filter="integer" />
+		<field name="min_hoehe" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_HOEHE" default="480" min="200" max="800" filter="integer" />
+		<field name="seiten_url" type="url" label="COM_MITGLIEDSFOTO_CFG_SEITEN_URL" description="COM_MITGLIEDSFOTO_CFG_SEITEN_URL_DESC" hint="https://www.sv-alzey.de/foto" default="" validate="url" filter="url" />
+	</fieldset>
+
+	<fieldset name="mail" label="COM_MITGLIEDSFOTO_CFG_MAIL" description="COM_MITGLIEDSFOTO_CFG_MAIL_DESC">
+		<field name="mail_empfaenger" type="email" label="COM_MITGLIEDSFOTO_CFG_MAIL_EMPFAENGER" description="COM_MITGLIEDSFOTO_CFG_MAIL_EMPFAENGER_DESC" hint="ausweisfoto@sv-alzey.de" default="" validate="email" />
+	</fieldset>
+
+	<fieldset name="datenschutz" label="COM_MITGLIEDSFOTO_CFG_DATENSCHUTZ" description="COM_MITGLIEDSFOTO_CFG_DATENSCHUTZ_DESC">
+		<field name="ds_speicherort" type="textarea" rows="2" label="COM_MITGLIEDSFOTO_CFG_DS_SPEICHERORT" default="auf dem Server der Vereinshomepage und im Vereins-Postfach sowie in der Mitgliederverwaltung des Vereins" />
+		<field name="ds_loeschfrist" type="textarea" rows="2" label="COM_MITGLIEDSFOTO_CFG_DS_LOESCHFRIST" default="nach Erstellung der Mitgliedsausweise, spätestens jedoch nach Ablauf der Mitgliedschaft" />
+		<field name="ds_link" type="url" label="COM_MITGLIEDSFOTO_CFG_DS_LINK" description="COM_MITGLIEDSFOTO_CFG_DS_LINK_DESC" default="" validate="url" filter="url" />
+	</fieldset>
+
+	<fieldset name="sicherheit" label="COM_MITGLIEDSFOTO_CFG_SICHERHEIT" description="COM_MITGLIEDSFOTO_CFG_SICHERHEIT_DESC">
+		<field name="schluessel" type="text" label="COM_MITGLIEDSFOTO_CFG_SCHLUESSEL" description="COM_MITGLIEDSFOTO_CFG_SCHLUESSEL_DESC" default="" readonly="true" />
+		<field name="ratelimit_versuche" type="number" label="COM_MITGLIEDSFOTO_CFG_RL_VERSUCHE" default="5" min="1" max="50" filter="integer" />
+		<field name="ratelimit_minuten" type="number" label="COM_MITGLIEDSFOTO_CFG_RL_MINUTEN" default="15" min="1" max="1440" filter="integer" />
+	</fieldset>
+
+	<fieldset name="permissions" label="JCONFIG_PERMISSIONS_LABEL" description="JCONFIG_PERMISSIONS_DESC">
+		<field name="rules" type="rules" label="JCONFIG_PERMISSIONS_LABEL" validate="rules" filter="rules" component="com_mitgliedsfoto" section="component" />
+	</fieldset>
+</config>

@@ -1,0 +1,13 @@
+{
+	"$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+	"name": "com_mitgliedsfoto",
+	"version": "1.0.0",
+	"description": "Foto-Erfassung für Mitgliedsausweise",
+	"license": "GPL-2.0-or-later",
+	"assets": [
+		{ "name": "com_mitgliedsfoto.cropper", "type": "script", "uri": "com_mitgliedsfoto/cropper.js", "attributes": { "defer": true } },
+		{ "name": "com_mitgliedsfoto.cropper.css", "type": "style", "uri": "com_mitgliedsfoto/cropper.css" },
+		{ "name": "com_mitgliedsfoto.uploader", "type": "script", "uri": "com_mitgliedsfoto/foto-upload.js", "dependencies": ["core", "com_mitgliedsfoto.cropper"], "attributes": { "defer": true } },
+		{ "name": "com_mitgliedsfoto.uploader.css", "type": "style", "uri": "com_mitgliedsfoto/foto-upload.css", "dependencies": ["com_mitgliedsfoto.cropper.css"] }
+	]
+}
