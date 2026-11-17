@@ -72,6 +72,13 @@ Automatische Tests:
   QR-Weg, Link, Upload, Angriffsversuche (PHP-Datei, JPEG mit Code, falsche Tokens/Nummern, XSS, CSRF), Rate-Limit,
   Mail, Backend-Liste, Filter Vereinsmitglied/Austritt, Optionen, Vorstandserfassung, Export, Zurücksetzen/Löschen.
 
+## Deinstallation
+
+Beim Deinstallieren werden gelöscht: die Tabellen `#__mitgliedsfoto` und `#__mitgliedsfoto_versuche`, alle Optionen
+(inkl. Schlüssel) und Berechtigungen, die Programmdateien sowie **alle in der Tabelle verzeichneten Fotos** – auch in einem
+eigenen Speicherordner. Andere Dateien in diesem Ordner bleiben unangetastet; ist er danach leer, wird er entfernt.
+Nicht betroffen: versendete Mails, Kopien in OneDrive/SharePoint/SPG Verein und die Joomla-Benutzerkonten/-felder.
+
 ## Abweichungen/Ergänzungen zum Konzept
 
 - `#__mitgliedsfoto` hat zwei zusätzliche Spalten: `mail_gesendet_am` (für „Mail erneut senden“/Fehleranzeige)
