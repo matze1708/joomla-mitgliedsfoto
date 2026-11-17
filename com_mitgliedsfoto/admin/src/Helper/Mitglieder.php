@@ -26,11 +26,11 @@ use Joomla\Database\ParameterType;
  */
 final class Mitglieder
 {
-    public const FELDER = ['nr', 'vorname', 'nachname', 'eintritt', 'geburtsdatum', 'email'];
+    public const FELDER = ['nr', 'vorname', 'nachname', 'eintritt', 'geburtsdatum', 'email', 'aktiv', 'austritt'];
     private const PFLICHT = ['nr', 'vorname', 'nachname'];
 
     /** Erlaubte Kernfelder von #__users bzw. daraus abgeleitete Ausdrücke. */
-    private const KERN = ['name', 'username', 'email', 'registerDate', 'name_vorname', 'name_nachname'];
+    private const KERN = ['name', 'username', 'email', 'registerDate', 'name_vorname', 'name_nachname', 'name_komma_vorname', 'name_komma_nachname'];
 
     /** Zulässiges Format einer Mitgliedsnummer (Eingaben werden vor jeder Abfrage geprüft). */
     public const NR_MUSTER = '/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,49}$/D';
@@ -102,6 +102,17 @@ final class Mitglieder
         return self::hatFeld('geburtsdatum');
     }
 
+    /** @return  string[]  erlaubte Werte des Mitglieds-Filterfeldes (klein geschrieben) */
+    public static function aktivWerte(): array
+    {
+        $werte = array_map(
+            static fn ($w) => mb_strtolower(trim($w)),
+            explode(',', (string) Einstellungen::get('wert_aktiv', ''))
+        );
+
+        return array_values(array_slice(array_filter($werte, static fn ($w) => $w !== '' && mb_strlen($w) <= 100), 0, 10));
+    }
+
     public static function nrGueltig(string $nr): bool
     {
         return (bool) preg_match(self::NR_MUSTER, $nr);
@@ -129,6 +140,9 @@ final class Mitglieder
         return match (substr($wert, 5)) {
             // Name = „Vorname Nachname“: letztes Wort als Nachname, Rest als Vorname
             'name_nachname' => 'SUBSTRING_INDEX(TRIM(' . $name . "), ' ', -1)",
+            // Name = „Nachname, Vorname“
+            'name_komma_nachname' => 'TRIM(SUBSTRING_INDEX(' . $name . ", ',', 1))",
+            'name_komma_vorname'  => 'TRIM(SUBSTRING(' . $name . ', LOCATE(\',\', ' . $name . ') + 1))',
             'name_vorname'  => 'TRIM(SUBSTRING(TRIM(' . $name . '), 1, CHAR_LENGTH(TRIM(' . $name . ')) - CHAR_LENGTH(SUBSTRING_INDEX(TRIM('
                 . $name . "), ' ', -1))))",
             default         => $db->quoteName('u.' . substr($wert, 5)),
@@ -172,6 +186,33 @@ final class Mitglieder
 
         $nr = self::ausdruck($db, 'nr');
         $query->where($nr . ' IS NOT NULL')->where('TRIM(' . $nr . ") <> ''");
+
+        // Optional: nur Vereinsmitglieder (Feld hat einen der konfigurierten Werte, z. B. „1“ oder „ja“).
+        $aktiv  = self::ausdruck($db, 'aktiv');
+        $werte  = self::aktivWerte();
+
+        if ($aktiv !== null && $werte !== []) {
+            $platzhalter = [];
+
+            foreach ($werte as $i => $wert) {
+                $platzhalter[] = ':aktiv' . $i;
+                $query->bind(':aktiv' . $i, $werte[$i], ParameterType::STRING);
+            }
+
+            $query->where('LOWER(TRIM(' . $aktiv . ')) IN (' . implode(', ', $platzhalter) . ')');
+        }
+
+        // Optional: Ausgetretene ausblenden (Austritt leer oder Datum in der Zukunft).
+        $austritt = self::ausdruck($db, 'austritt');
+
+        if ($austritt !== null) {
+            $wert  = 'TRIM(' . $austritt . ')';
+            $datum = 'COALESCE(STR_TO_DATE(' . $wert . ", '%d.%m.%Y'), STR_TO_DATE(LEFT(" . $wert . ", 10), '%Y-%m-%d'))";
+            $query->where(
+                '(' . $austritt . ' IS NULL OR ' . $wert . " IN ('', '0', '-', '0000-00-00', '0000-00-00 00:00:00', '00.00.0000') OR "
+                . $datum . ' > CURDATE())'
+            );
+        }
 
         return $query;
     }

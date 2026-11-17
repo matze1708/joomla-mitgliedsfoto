@@ -79,6 +79,10 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('Liste: gesperrtes Konto (Karl) enthalten',liste.includes('Gesperrt'));
  ok('Liste: Konto ohne Nummer nicht enthalten',!liste.includes('Ohne'));
  ok('Liste: Eintritt angezeigt',liste.includes('2010'));
+ ok('Filter Austritt: ausgetreten (9004) nicht in Liste',!liste.includes('>9004<'));
+ ok('Filter Austritt: Austritt in Zukunft (9005) in Liste',liste.includes('>9005<'));
+ ok('Filter Vereinsmitglied=1: Nichtmitglied (9006) nicht in Liste',!liste.includes('>9006<'));
+ ok('Name aus Konto geteilt (Vorname Jörg / Nachname Müller-Groß)',/Müller-Groß<\/th>\s*<td>Jörg</.test(liste));
  ok('Warnung Webroot-Ordner',liste.includes('innerhalb des Webroots'));
  const bild=await a.request.get(B+'/administrator/index.php?option=com_mitgliedsfoto&task=foto.bild&nr=9001');
  ok('Bild-Auslieferung: JPEG + CSP + nosniff',bild.headers()['content-type']==='image/jpeg'&&(bild.headers()['content-security-policy']||'').includes('sandbox')&&bild.headers()['x-content-type-options']==='nosniff');

@@ -23,6 +23,13 @@
 		<field name="feld_email" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_EMAIL" description="COM_MITGLIEDSFOTO_CFG_FELD_EMAIL_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
 			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
 		</field>
+		<field name="feld_aktiv" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_AKTIV" description="COM_MITGLIEDSFOTO_CFG_FELD_AKTIV_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="wert_aktiv" type="text" label="COM_MITGLIEDSFOTO_CFG_WERT_AKTIV" description="COM_MITGLIEDSFOTO_CFG_WERT_AKTIV_DESC" default="" maxlength="200" filter="string" />
+		<field name="feld_austritt" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_AUSTRITT" description="COM_MITGLIEDSFOTO_CFG_FELD_AUSTRITT_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
 		<field name="nur_aktive" type="radio" layout="joomla.form.field.radio.switcher" label="COM_MITGLIEDSFOTO_CFG_NUR_AKTIVE" description="COM_MITGLIEDSFOTO_CFG_NUR_AKTIVE_DESC" default="0" showon="quelle:benutzer" filter="integer">
 			<option value="0">JNO</option>
 			<option value="1">JYES</option>
@@ -34,6 +41,8 @@
 		<field name="spalte_eintritt" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_EINTRITT" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
 		<field name="spalte_geburtsdatum" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_GEBURTSDATUM" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
 		<field name="spalte_email" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_EMAIL" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_aktiv" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_AKTIV" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_austritt" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_AUSTRITT" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
 	</fieldset>
 
 	<fieldset name="foto" label="COM_MITGLIEDSFOTO_CFG_FOTO" description="COM_MITGLIEDSFOTO_CFG_FOTO_DESC">

@@ -30,7 +30,7 @@ class MitgliedsfeldField extends GroupedlistField
 
         $konto = [];
 
-        foreach (['name', 'name_vorname', 'name_nachname', 'username', 'email', 'registerDate'] as $kern) {
+        foreach (['name', 'name_vorname', 'name_nachname', 'name_komma_vorname', 'name_komma_nachname', 'username', 'email', 'registerDate'] as $kern) {
             $konto[] = HTMLHelper::_('select.option', 'core:' . $kern, Text::_('COM_MITGLIEDSFOTO_CFG_KERN_' . strtoupper($kern)));
         }
 
