@@ -122,13 +122,20 @@
       absenden.textContent = T('COM_MITGLIEDSFOTO_JS_SENDET', 'Wird gesendet …');
 
       leinwand.toBlob((blob) => {
+        if (!blob) {
+          fehler(T('COM_MITGLIEDSFOTO_JS_FEHLER', 'Fehler beim Senden.'));
+          absenden.disabled = false;
+          absenden.textContent = label;
+          sendet = false;
+          return;
+        }
         const daten = new FormData(form);
         daten.append('foto', blob, 'foto.jpg');
 
         fetch(root.dataset.url + (root.dataset.url.includes('?') ? '&' : '?') + 'format=json', {
           method: 'POST', body: daten, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
-          .then((r) => r.json())
+          .then((r) => r.json().catch(() => null))
           .then((antwort) => {
             if (!antwort || !antwort.ok) {
               throw new Error((antwort && antwort.message) || T('COM_MITGLIEDSFOTO_JS_FEHLER', 'Fehler beim Senden.'));

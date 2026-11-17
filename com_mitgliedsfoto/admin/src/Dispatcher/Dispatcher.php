@@ -19,6 +19,19 @@ use Joomla\CMS\Language\Text;
  */
 class Dispatcher extends ComponentDispatcher
 {
+    /** Texte gibt es nur auf Deutsch – bei anderer Backend-Sprache de-DE nachladen. */
+    protected function loadLanguage()
+    {
+        parent::loadLanguage();
+
+        $sprache = $this->app->getLanguage();
+
+        if (!$sprache->hasKey('COM_MITGLIEDSFOTO_SEITENTITEL')) {
+            $sprache->load('com_mitgliedsfoto', JPATH_ADMINISTRATOR, 'de-DE', true)
+                || $sprache->load('com_mitgliedsfoto', JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto', 'de-DE', true);
+        }
+    }
+
     protected function checkAccess(): void
     {
         parent::checkAccess();

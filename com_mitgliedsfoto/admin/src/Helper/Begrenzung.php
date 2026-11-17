@@ -67,6 +67,7 @@ final class Begrenzung
                 ->where($db->quoteName('zeit') . ' < :seit')->bind(':seit', $seit)
         )->execute();
 
-        $db->insertObject('#__mitgliedsfoto_versuche', (object) ['ip_hash' => $hash, 'zeit' => Factory::getDate()->toSql()]);
+        $zeile = (object) ['ip_hash' => $hash, 'zeit' => Factory::getDate()->toSql()];
+        $db->insertObject('#__mitgliedsfoto_versuche', $zeile);
     }
 }

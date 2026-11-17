@@ -52,7 +52,7 @@ final class Fotos
         try {
             $db->insertObject('#__mitgliedsfoto', $zeile);
         } catch (\Throwable $e) {
-            throw new FotoException('COM_MITGLIEDSFOTO_ERR_BEREITS');
+            throw new FotoException(self::finden($mitgliedsnr) ? 'COM_MITGLIEDSFOTO_ERR_BEREITS' : 'COM_MITGLIEDSFOTO_ERR_SPEICHERN');
         }
     }
 

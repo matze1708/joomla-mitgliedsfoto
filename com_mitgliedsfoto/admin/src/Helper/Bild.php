@@ -11,7 +11,9 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Helper;
 \defined('_JEXEC') or die;
 
 /**
- * Serverseitige Prüfung und Neu-Encoding des Fotos (GD): nie wird die Originaldatei gespeichert.
+ * Serverseitige Prüfung und Neu-Encoding des Fotos (GD). Gespeichert werden ausschließlich die von GD neu
+ * erzeugten Pixel – nie die hochgeladenen Bytes. Eingebetteter Code, EXIF/Metadaten, Polyglott-Dateien o. Ä.
+ * gehen dabei verloren. Akzeptiert wird nur, was der Browser nach dem Zuschnitt liefert: JPEG, 3:4, max. 1200x1600.
  */
 final class Bild
 {
@@ -19,7 +21,8 @@ final class Bild
     public const HOEHE = 800;
     public const MIN_BREITE = 300;
     public const MIN_HOEHE = 400;
-    public const MAX_PIXEL = 36000000;
+    public const MAX_BREITE = 1200;
+    public const MAX_HOEHE = 1600;
 
     /**
      * @param   string  $datei      Pfad der hochgeladenen Datei
@@ -44,15 +47,32 @@ final class Bild
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_GROESSE');
         }
 
+        // Inhalt prüfen (nie Dateiname/Endung/Content-Type des Clients): Magic Bytes + Bildkopf.
+        $kopf = (string) file_get_contents($datei, false, null, 0, 3);
+
+        if ($kopf !== "\xFF\xD8\xFF") {
+            throw new FotoException('COM_MITGLIEDSFOTO_ERR_FORMAT');
+        }
+
+        if (\function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime  = $finfo ? finfo_file($finfo, $datei) : false;
+
+            if ($mime !== false && $mime !== 'image/jpeg') {
+                throw new FotoException('COM_MITGLIEDSFOTO_ERR_FORMAT');
+            }
+        }
+
         $info = @getimagesize($datei);
 
-        if ($info === false || !\in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+        if ($info === false || $info[2] !== IMAGETYPE_JPEG) {
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_FORMAT');
         }
 
         [$w, $h] = $info;
 
-        if ($w < 1 || $h < 1 || $w * $h > self::MAX_PIXEL) {
+        // Obergrenze verhindert Speicher-Erschöpfung (Dekompressionsbombe) vor dem Dekodieren.
+        if ($w < 1 || $h < 1 || $w > self::MAX_BREITE || $h > self::MAX_HOEHE) {
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_FORMAT');
         }
 
@@ -65,7 +85,7 @@ final class Bild
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_SEITENVERHAELTNIS');
         }
 
-        $quelle = @imagecreatefromstring((string) file_get_contents($datei));
+        $quelle = @imagecreatefromjpeg($datei);
 
         if ($quelle === false) {
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_FORMAT');

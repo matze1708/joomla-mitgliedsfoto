@@ -10,53 +10,74 @@ der Vorstand erfasst Fotos für Mitglieder ohne Web-Zugang im Backend. Konzept: 
 ./build.sh          # führt tests/run.php aus und erzeugt dist/com_mitgliedsfoto.zip
 ```
 
+Automatisch per GitHub Action (`.github/workflows/build.yml`):
+
+- **Pull Request**: Prüfung (PHP-Syntax, XML, JSON, JS), Tests und Probe-Build – kein Release.
+- **Merge/Push auf `master`**: zusätzlich GitHub-Release `v<Version>` (Version aus `com_mitgliedsfoto/mitgliedsfoto.xml`)
+  mit `com_mitgliedsfoto.zip` → Download unter *Releases*. Für eine neue Version vor dem Merge die `<version>` im Manifest erhöhen;
+  bei gleicher Version wird das ZIP im bestehenden Release ersetzt.
+
 Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender Joomla-Mailversand.
 
 ## Installation
 
 1. Joomla-Backend → System → Erweiterungen → Installieren → `com_mitgliedsfoto.zip` hochladen.
    Dabei werden die Tabellen `#__mitgliedsfoto`, `#__mitgliedsfoto_versuche` angelegt und ein zufälliger HMAC-Schlüssel erzeugt.
-2. Komponenten → Mitgliedsfoto → **Optionen**:
-   - **Mitgliedertabelle**: Tabellenname (mit `#__` oder voller Name) und Spalten für Nummer, Vorname, Nachname, Eintritt;
-     optional Geburtsdatum (Aushang-Weg) und E-Mail (Link-Export).
+2. Komponenten → Mitgliedsfoto → **Optionen** → Reiter „Mitgliedertabelle“, Datenquelle **Joomla-Benutzer mit Benutzerfeldern**.
+   Empfohlene Zuordnung für sv-alzey.de (Feldgruppe „Mitglieds Informationen“):
+
+   | Option | Auswahl |
+   |---|---|
+   | Mitgliedsnummer | Benutzerfeld *Mitgliedsnummer (mitgliedsnummer, text)* |
+   | Vorname | *Name – alles vor dem letzten Wort (Vorname)* (bzw. „Nachname, Vorname“-Variante, je nach Format des Kontonamens) |
+   | Nachname | *Name – letztes Wort (Nachname)* |
+   | Eintritt | Benutzerfeld *Eintritt (eintritt, text)* |
+   | Geburtsdatum | – (nicht vorhanden → QR-Code-Weg mit Geburtsdatum nicht verfügbar) |
+   | E-Mail | Benutzerfeld *E-Mail (e-mail, text)* oder *E-Mail-Adresse des Kontos* |
+   | Filter: Vereinsmitglied | Benutzerfeld *Vereinsmitglied (vereinsmitglied, radio)*, erlaubte Werte = gespeicherter Wert der Option „Ja“ (z. B. `1`) |
+   | Filter: Austritt | Benutzerfeld *Austritt (austritt, text)* – ausgetretene Mitglieder werden ausgeblendet |
+   | Nur nicht gesperrte Konten | Nein (Mitglieder melden sich nicht an) |
+
+   Hinweis: Bei mehrteiligen Nachnamen („Hans Peter von Berg“) liefert die Aufteilung am letzten Wort „Hans Peter von“ / „Berg“.
+   Alternativ kann eine eigene Datenbanktabelle als Quelle gewählt werden.
+   Weitere Reiter:
    - **Foto und Speicherort**: Speicherordner (empfohlen: absoluter Pfad **außerhalb** des Webroots, für den Webserver-Benutzer beschreibbar),
-     Adresse der Foto-Seite, z. B. `https://www.sv-alzey.de/foto`.
+     Adresse der Foto-Seite, z. B. `https://www.sv-alzey.de/foto` (leer = automatisch aus dem Menüeintrag).
    - **Mail**: Empfängeradresse (Vorschlag: `ausweisfoto@sv-alzey.de`, nicht `mitglieder@sv-alzey.de`).
-   - **Datenschutzhinweis**: Speicherort-/Löschfrist-Texte und Link zur Datenschutzerklärung prüfen und anpassen (Platzhalter-Vorschläge!).
+   - **Datenschutzhinweis**: Speicherort-/Löschfrist-Texte und Link zur Datenschutzerklärung prüfen und anpassen (Vorschlagswerte!).
    - **Berechtigungen**: Aktion „Mitgliedsfotos verwalten“ der gewünschten Gruppe (Vorstand) erlauben (Super User hat sie immer).
 3. Menüeintrag anlegen: Menüs → (Menü) → Neuer Eintrag → Typ **Mitgliedsfoto → Foto einreichen**, Alias `foto`
    (Menü am besten „versteckt“, die Seite wird nur über Link/QR-Code erreicht).
-4. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
+4. Falls das Plugin **System – Seitencache** aktiv ist: die Seite `/foto` dort ausschließen
+   (sonst würden Formular-Token und Namen zwischengespeichert).
+5. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
 
 ## Testanleitung
 
-**Testmitglied** (falls noch keine Echtdaten in der Joomla-Mitgliedertabelle): z. B. in phpMyAdmin
+1. **Link erzeugen**: Backend → Mitgliedsfoto → „Link-Export (alle, CSV)“ → Zeile eines Testmitglieds enthält
+   `…/foto?m=<Nr>&t=<64 Hex-Zeichen>`.
+2. **Link öffnen** (Smartphone, ohne Anmeldung): Name/Nummer erscheinen, „Das bin ich“ + Foto per Kamera oder Datei,
+   Zuschnitt, Datenschutz-Checkbox, Absenden → Erfolgsmeldung; in der Liste Status „eingereicht“ mit Vorschau;
+   erneutes Öffnen zeigt „Foto bereits eingereicht“.
+3. **Mailtest**: Betreff `FOTO|<Nr>`, Anhang `Nachname_Vorname_Nr.jpg`, Body `Mitgliedsnummer / Vorname / Nachname / Quelle: web`.
+   Kommt nichts an, zeigt die Liste „Mail nicht gesendet“ → nach Korrektur „Mail erneut senden“.
+4. **Negativtests**: Token im Link ändern → neutrale Fehlermeldung (gleich bei unbekannter Nummer).
+5. **Vorstandserfassung**: Liste → „Foto erfassen“ → Status „durch Vorstand erfasst“, Mail mit `Quelle: vorstand`.
+6. **Zurücksetzen / Löschen**: „Zurücksetzen“ (Zeile + Datei weg) bzw. „Foto löschen“ (nur Datei weg, keine erneute Einreichung).
+7. Speicherordner: Foto-Datei vorhanden, direkter Aufruf per URL darf **nicht** möglich sein.
 
-```sql
-CREATE TABLE jos_mf_test (nr VARCHAR(20) PRIMARY KEY, vorname VARCHAR(60), nachname VARCHAR(60),
-                          eintritt DATE, geburtsdatum DATE, email VARCHAR(120));
-INSERT INTO jos_mf_test VALUES ('9001','Jörg','Müller-Groß','2020-01-01','1980-05-17','test@example.org');
-```
+Automatische Tests:
+- `php tests/run.php` – Joomla-unabhängige Logik (Token, Dateinamen, Bildprüfung inkl. Schadcode-Dateien, Eingabe-Whitelist, Datum).
+- `tests/e2e/joomla-e2e.js` – Browser-Test (Playwright) gegen eine echte Joomla-5.4-Instanz mit Apache/MariaDB:
+  QR-Weg, Link, Upload, Angriffsversuche (PHP-Datei, JPEG mit Code, falsche Tokens/Nummern, XSS, CSRF), Rate-Limit,
+  Mail, Backend-Liste, Filter Vereinsmitglied/Austritt, Optionen, Vorstandserfassung, Export, Zurücksetzen/Löschen.
 
-Optionen: Tabelle `jos_mf_test` (bzw. `#__mf_test`), Spalten `nr`, `vorname`, `nachname`, `eintritt`, `geburtsdatum`, `email`.
+## Deinstallation
 
-1. **Link erzeugen**: Backend → Mitgliedsfoto → Toolbar „Link-Export (alle, CSV)“ → Zeile für 9001 enthält den Link
-   `…/foto?m=9001&t=<64 Hex-Zeichen>`.
-2. **Link öffnen** (am besten mit dem Smartphone): Name/Nummer erscheinen, „Das bin ich“ + Foto per Kamera oder Datei,
-   Zuschnitt, Datenschutz-Checkbox, Absenden. Erwartung: Erfolgsmeldung; in der Liste Status „eingereicht“ mit Vorschau;
-   erneutes Öffnen des Links zeigt „Foto bereits eingereicht“.
-3. **Mailtest**: Im Postfach kommt `FOTO|9001` mit Anhang `Mueller-Gross_Joerg_9001.jpg` und Body
-   `Mitgliedsnummer / Vorname / Nachname / Quelle: web`. Kommt nichts an, zeigt die Liste „Mail nicht gesendet“;
-   nach Korrektur der Joomla-Mailkonfiguration/Empfängeradresse: Zeile markieren → „Mail erneut senden“.
-4. **Negativtests**: Token im Link ändern → neutrale Fehlermeldung (gleiche Meldung bei unbekannter Nummer);
-   Aushang-Weg `…/foto` ohne Parameter: falsches Geburtsdatum 6× → „Zu viele Versuche“ (Standard 5 pro 15 Minuten und IP).
-5. **Vorstandserfassung**: Liste → bei einem offenen Mitglied „Foto erfassen“ → gleiche Oberfläche ohne Token,
-   Status „durch Vorstand erfasst“, Mail mit `Quelle: vorstand`.
-6. **Zurücksetzen / Löschen**: Zeile markieren → „Zurücksetzen“ (Zeile + Datei weg, Mitglied wieder offen) bzw.
-   „Foto löschen“ (nur Datei weg, Zeile bleibt mit Löschzeitpunkt, keine erneute Einreichung).
-7. Speicherordner prüfen: Foto-Datei vorhanden, `https://…/<ordner>/<datei>.jpg` darf **nicht** abrufbar sein.
-
-Automatische Tests der Joomla-unabhängigen Logik (Token, Dateinamen, Bildprüfung, Datumsvergleich): `php tests/run.php`.
+Beim Deinstallieren werden gelöscht: die Tabellen `#__mitgliedsfoto` und `#__mitgliedsfoto_versuche`, alle Optionen
+(inkl. Schlüssel) und Berechtigungen, die Programmdateien sowie **alle in der Tabelle verzeichneten Fotos** – auch in einem
+eigenen Speicherordner. Andere Dateien in diesem Ordner bleiben unangetastet; ist er danach leer, wird er entfernt.
+Nicht betroffen: versendete Mails, Kopien in OneDrive/SharePoint/SPG Verein und die Joomla-Benutzerkonten/-felder.
 
 ## Abweichungen/Ergänzungen zum Konzept
 
@@ -75,5 +96,4 @@ Automatische Tests der Joomla-unabhängigen Logik (Token, Dateinamen, Bildprüfu
 - Der Standard-Speicherordner liegt im Komponentenverzeichnis (durch `.htaccess`/`web.config` geschützt) und würde beim Deinstallieren gelöscht –
   für den Echtbetrieb einen Ordner außerhalb des Webroots eintragen.
 - Folgeschritt (Power Automate, SPG Verein) ist nicht Teil dieser Komponente.
-- Nicht in einer echten Joomla-Instanz getestet (hier keine Datenbank/Joomla verfügbar): getestet sind PHP-Syntax, XML-Dateien,
-  die Joomla-unabhängige Logik und der komplette Browser-Ablauf (Zuschnitt → 600×800 JPEG → Serverprüfung) im Chromium. Bitte den Installationstest oben einmal durchlaufen.
+- Getestet in einer lokalen Joomla-5.4.0-Instanz (Apache 2.4, PHP 8.3, MariaDB 10.11) mit nachgebauter Feldstruktur – nicht auf sv-alzey.de selbst.

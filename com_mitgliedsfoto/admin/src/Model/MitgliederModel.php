@@ -39,7 +39,6 @@ class MitgliederModel extends ListModel
     protected function getListQuery()
     {
         $db    = $this->getDatabase();
-        $spalten = Mitglieder::spalten();
         $query = Mitglieder::mitStatusQuery($db)->select([
             $db->quoteName('f.status', 'status'),
             $db->quoteName('f.eingereicht_am', 'eingereicht_am'),
@@ -62,14 +61,14 @@ class MitgliederModel extends ListModel
                 ->where($db->quoteName('f.geloescht_am') . ' IS NULL');
         }
 
-        $suche = trim((string) $this->getState('filter.search'));
+        $suche = mb_substr(trim((string) $this->getState('filter.search')), 0, 100);
 
         if ($suche !== '') {
             $like = '%' . addcslashes($suche, '%_\\') . '%';
             $query->where(
-                '(' . $db->quoteName('m.' . $spalten['nachname']) . ' LIKE :s1 OR '
-                . $db->quoteName('m.' . $spalten['vorname']) . ' LIKE :s2 OR '
-                . 'CONVERT(' . $db->quoteName('m.' . $spalten['nr']) . ' USING utf8mb4) LIKE :s3)'
+                '(' . Mitglieder::ausdruck($db, 'nachname') . ' LIKE :s1 OR '
+                . Mitglieder::ausdruck($db, 'vorname') . ' LIKE :s2 OR '
+                . 'CONVERT(' . Mitglieder::ausdruck($db, 'nr') . ' USING utf8mb4) LIKE :s3)'
             )
                 ->bind(':s1', $like, ParameterType::STRING)
                 ->bind(':s2', $like, ParameterType::STRING)

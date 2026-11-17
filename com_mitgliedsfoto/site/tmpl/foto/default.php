@@ -26,6 +26,9 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     <?php elseif ($this->zustand === 'ungueltig') : ?>
         <div class="alert alert-danger"><?php echo Text::_('COM_MITGLIEDSFOTO_ERR_LINK'); ?></div>
 
+    <?php elseif ($this->zustand === 'gesperrt') : ?>
+        <div class="alert alert-danger"><?php echo Text::_('COM_MITGLIEDSFOTO_ERR_ZU_VIELE_VERSUCHE'); ?></div>
+
     <?php elseif ($this->zustand === 'bereits') : ?>
         <div class="alert alert-info"><?php echo Text::_('COM_MITGLIEDSFOTO_BEREITS'); ?></div>
 

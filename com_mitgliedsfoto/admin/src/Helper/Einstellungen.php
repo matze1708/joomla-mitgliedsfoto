@@ -23,9 +23,28 @@ final class Einstellungen
 {
     public const KOMPONENTE = 'com_mitgliedsfoto';
 
+    /** Standardwerte (identisch mit config.xml): Joomla speichert diese bei der Installation nicht. */
+    private const STANDARD = [
+        'max_upload_kb'      => 8192,
+        'min_breite'         => 360,
+        'min_hoehe'          => 480,
+        'ratelimit_versuche' => 5,
+        'ratelimit_minuten'  => 15,
+        'ds_speicherort'     => 'auf dem Server der Vereinshomepage und im Vereins-Postfach sowie in der Mitgliederverwaltung des Vereins',
+        'ds_loeschfrist'     => 'nach Erstellung der Mitgliedsausweise, spätestens jedoch nach Ablauf der Mitgliedschaft',
+    ];
+
+    private static ?string $seitenUrl = null;
+
     public static function get(string $name, $standard = '')
     {
-        return ComponentHelper::getParams(self::KOMPONENTE)->get($name, $standard);
+        $wert = ComponentHelper::getParams(self::KOMPONENTE)->get($name);
+
+        if ($wert === null || $wert === '') {
+            return self::STANDARD[$name] ?? $standard;
+        }
+
+        return $wert;
     }
 
     /** Geheimer HMAC-Schlüssel; wird bei Bedarf einmalig erzeugt. */
@@ -70,20 +89,40 @@ final class Einstellungen
     {
         $ordner = rtrim(trim((string) self::get('speicherordner')), '/\\');
 
-        return $ordner !== '' ? $ordner : JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/fotos';
+        // Nur absolute Pfade ohne „..“; sonst Standardordner.
+        if ($ordner === '' || str_contains($ordner, '..') || !preg_match('#^(/|[A-Za-z]:[\\\\/])#', $ordner)) {
+            return JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/fotos';
+        }
+
+        return $ordner;
+    }
+
+    /** true, wenn der Foto-Ordner im Webroot liegt (dann nur per .htaccess/web.config geschützt). */
+    public static function speicherordnerImWebroot(): bool
+    {
+        $root   = rtrim(str_replace('\\', '/', (string) realpath(JPATH_ROOT)), '/') . '/';
+        $ordner = str_replace('\\', '/', self::speicherordner());
+        $echt   = realpath($ordner);
+        $ordner = rtrim($echt !== false ? str_replace('\\', '/', $echt) : $ordner, '/') . '/';
+
+        return str_starts_with($ordner, $root);
     }
 
     /** Absolute URL der Seite /foto (ohne Parameter). */
     public static function seitenUrl(): string
     {
-        $url = trim((string) self::get('seiten_url'));
-
-        if ($url !== '') {
-            return $url;
+        if (self::$seitenUrl !== null) {
+            return self::$seitenUrl;
         }
 
-        return Route::link('site', 'index.php?option=com_mitgliedsfoto&view=foto', false, Route::TLS_IGNORE, true)
-            ?: rtrim(Uri::root(), '/') . '/foto';
+        $url = trim((string) self::get('seiten_url'));
+
+        if ($url === '') {
+            $url = Route::link('site', 'index.php?option=com_mitgliedsfoto&view=foto', false, Route::TLS_IGNORE, true)
+                ?: rtrim(Uri::root(), '/') . '/foto';
+        }
+
+        return self::$seitenUrl = $url;
     }
 
     public static function linkFuer(string $mitgliedsnr): string

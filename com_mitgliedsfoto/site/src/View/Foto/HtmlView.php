@@ -14,6 +14,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Router\Route;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Begrenzung;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Fotos;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Mitglieder;
@@ -21,7 +22,7 @@ use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Token;
 
 class HtmlView extends BaseHtmlView
 {
-    /** ident | ungueltig | bereits | formular | nicht_konfiguriert */
+    /** ident | ungueltig | gesperrt | bereits | formular | nicht_konfiguriert */
     public string $zustand = 'ident';
 
     public ?object $mitglied = null;
@@ -52,12 +53,15 @@ class HtmlView extends BaseHtmlView
             $this->zustand = 'nicht_konfiguriert';
         } elseif ($nr === '' && $token === '') {
             $this->zustand = 'ident';
+        } elseif (Begrenzung::blockiert()) {
+            $this->zustand = 'gesperrt';
         } else {
             $mitglied = Mitglieder::finden($nr);
 
             // Ungültiger Token und unbekannte Nummer führen zur selben neutralen Meldung.
             if (!$mitglied || !Token::pruefen($mitglied->nr, $token, Einstellungen::schluessel())) {
                 $this->zustand = 'ungueltig';
+                Begrenzung::fehlversuch();
             } elseif (Fotos::finden($mitglied->nr)) {
                 $this->zustand = 'bereits';
                 $this->mitglied = $mitglied;
