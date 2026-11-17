@@ -16,7 +16,16 @@ use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Router\Route;
 
 $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
-$datum = static fn ($s) => $s ? HTMLHelper::_('date', $s, Text::_('DATE_FORMAT_LC4')) : '';
+$datum = static function ($s, $tz = null) {
+    if (!$s || str_starts_with((string) $s, '0000')) {
+        return '';
+    }
+    try {
+        return HTMLHelper::_('date', $s, Text::_('DATE_FORMAT_LC4'), $tz);
+    } catch (\Throwable $e) {
+        return (string) $s;
+    }
+};
 $zeit  = static fn ($s) => $s ? HTMLHelper::_('date', $s, Text::_('DATE_FORMAT_LC6')) : '';
 $labels = ['eingereicht' => 'bg-info', 'vorstand' => 'bg-primary'];
 ?>
@@ -67,7 +76,7 @@ $labels = ['eingereicht' => 'bg-info', 'vorstand' => 'bg-primary'];
                                      style="object-fit:cover;border:1px solid #bbb">
                             </a>
                         <?php elseif ($m->geloescht_am) : ?>
-                            <span class="text-muted small"><?php echo Text::sprintf('COM_MITGLIEDSFOTO_GELOESCHT_AM', $e($datum($m->geloescht_am))); ?></span>
+                            <span class="text-muted small"><?php echo Text::sprintf('COM_MITGLIEDSFOTO_GELOESCHT_AM', $e($datum($m->geloescht_am, true))); ?></span>
                         <?php endif; ?>
                     </td>
                     <td>

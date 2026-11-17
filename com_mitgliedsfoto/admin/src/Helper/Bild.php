@@ -19,7 +19,7 @@ final class Bild
     public const HOEHE = 800;
     public const MIN_BREITE = 300;
     public const MIN_HOEHE = 400;
-    public const MAX_PIXEL = 36000000;
+    public const MAX_PIXEL = 8000000; // ~40 MB GD-Speicher; der Browser liefert 600x800
 
     /**
      * @param   string  $datei      Pfad der hochgeladenen Datei

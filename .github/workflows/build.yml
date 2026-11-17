@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # nur für das Release bei Tags
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: gd, intl, mbstring
+          tools: none
+
+      - name: Prüfen (PHP-Syntax, XML, JSON, JS)
+        run: |
+          find com_mitgliedsfoto tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          sudo apt-get install -y -qq libxml2-utils >/dev/null
+          find com_mitgliedsfoto -name '*.xml' -print0 | xargs -0 xmllint --noout
+          python3 -c "import json; json.load(open('com_mitgliedsfoto/media/joomla.asset.json'))"
+          node --check com_mitgliedsfoto/media/js/foto-upload.js
+
+      - name: Version aus Manifest
+        id: version
+        run: echo "version=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' com_mitgliedsfoto/mitgliedsfoto.xml)" >> "$GITHUB_OUTPUT"
+
+      - name: Tests und ZIP bauen
+        run: |
+          ./build.sh
+          cp dist/com_mitgliedsfoto.zip "dist/com_mitgliedsfoto-${{ steps.version.outputs.version }}.zip"
+
+      - name: ZIP als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: com_mitgliedsfoto-${{ steps.version.outputs.version }}
+          path: dist/com_mitgliedsfoto-${{ steps.version.outputs.version }}.zip
+
+      - name: Tag passt zur Manifest-Version?
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [ "${GITHUB_REF_NAME#v}" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME passt nicht zu <version>${{ steps.version.outputs.version }}</version> in mitgliedsfoto.xml"
+            exit 1
+          fi
+
+      - name: GitHub-Release mit ZIP
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/com_mitgliedsfoto.zip
+            dist/com_mitgliedsfoto-${{ steps.version.outputs.version }}.zip
+          generate_release_notes: true

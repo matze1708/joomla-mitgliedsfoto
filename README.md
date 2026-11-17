@@ -10,6 +10,13 @@ der Vorstand erfasst Fotos für Mitglieder ohne Web-Zugang im Backend. Konzept: 
 ./build.sh          # führt tests/run.php aus und erzeugt dist/com_mitgliedsfoto.zip
 ```
 
+Automatisch per GitHub Action (`.github/workflows/build.yml`):
+
+- **Jeder Push / Pull Request**: Prüfung + Tests + ZIP. Das ZIP liegt im Lauf unter *Actions → Build → Artifacts*.
+- **Release**: Version in `com_mitgliedsfoto/mitgliedsfoto.xml` erhöhen, committen, dann Tag setzen und pushen:
+  `git tag v1.0.0 && git push origin v1.0.0`. Die Action legt ein GitHub-Release mit `com_mitgliedsfoto.zip` an
+  (Tag und Manifest-Version müssen übereinstimmen). Download dann unter *Releases*.
+
 Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender Joomla-Mailversand.
 
 ## Installation
@@ -26,7 +33,9 @@ Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender
    - **Berechtigungen**: Aktion „Mitgliedsfotos verwalten“ der gewünschten Gruppe (Vorstand) erlauben (Super User hat sie immer).
 3. Menüeintrag anlegen: Menüs → (Menü) → Neuer Eintrag → Typ **Mitgliedsfoto → Foto einreichen**, Alias `foto`
    (Menü am besten „versteckt“, die Seite wird nur über Link/QR-Code erreicht).
-4. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
+4. Falls das Plugin **System – Seitencache** aktiv ist: die Seite `/foto` dort ausschließen
+   (sonst würden Formular-Token und Namen zwischengespeichert).
+5. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
 
 ## Testanleitung
 
