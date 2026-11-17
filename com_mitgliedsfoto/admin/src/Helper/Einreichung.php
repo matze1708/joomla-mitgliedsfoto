@@ -16,6 +16,30 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Helper;
 final class Einreichung
 {
     /**
+     * Prüft den Upload-Eintrag aus $_FILES und liefert den temporären Pfad.
+     *
+     * @throws  FotoException
+     */
+    public static function uploadPfad(mixed $datei): string
+    {
+        if (
+            !\is_array($datei)
+            || !isset($datei['tmp_name'], $datei['error'], $datei['size'])
+            || !\is_string($datei['tmp_name'])          // keine Mehrfach-Uploads (foto[])
+            || $datei['error'] !== \UPLOAD_ERR_OK
+            || !is_uploaded_file($datei['tmp_name'])
+        ) {
+            throw new FotoException('COM_MITGLIEDSFOTO_ERR_UPLOAD');
+        }
+
+        if ((int) $datei['size'] < 1 || (int) $datei['size'] > Einstellungen::maxBytes()) {
+            throw new FotoException('COM_MITGLIEDSFOTO_ERR_GROESSE');
+        }
+
+        return $datei['tmp_name'];
+    }
+
+    /**
      * @param   object       $mitglied  Datensatz aus Mitglieder::finden()
      * @param   string       $tmpDatei  hochgeladene Datei ($_FILES[..]['tmp_name'])
      * @param   string       $quelle    'web' | 'vorstand'

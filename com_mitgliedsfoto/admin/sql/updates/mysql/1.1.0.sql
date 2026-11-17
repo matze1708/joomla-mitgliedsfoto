@@ -1,0 +1,1 @@
+-- 1.1.0: keine Schemaänderung (Datenquelle Benutzerfelder, Sicherheits-Härtung)

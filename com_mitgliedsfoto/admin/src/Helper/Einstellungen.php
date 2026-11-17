@@ -89,7 +89,23 @@ final class Einstellungen
     {
         $ordner = rtrim(trim((string) self::get('speicherordner')), '/\\');
 
-        return $ordner !== '' ? $ordner : JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/fotos';
+        // Nur absolute Pfade ohne „..“; sonst Standardordner.
+        if ($ordner === '' || str_contains($ordner, '..') || !preg_match('#^(/|[A-Za-z]:[\\\\/])#', $ordner)) {
+            return JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/fotos';
+        }
+
+        return $ordner;
+    }
+
+    /** true, wenn der Foto-Ordner im Webroot liegt (dann nur per .htaccess/web.config geschützt). */
+    public static function speicherordnerImWebroot(): bool
+    {
+        $root   = rtrim(str_replace('\\', '/', (string) realpath(JPATH_ROOT)), '/') . '/';
+        $ordner = str_replace('\\', '/', self::speicherordner());
+        $echt   = realpath($ordner);
+        $ordner = rtrim($echt !== false ? str_replace('\\', '/', $echt) : $ordner, '/') . '/';
+
+        return str_starts_with($ordner, $root);
     }
 
     /** Absolute URL der Seite /foto (ohne Parameter). */

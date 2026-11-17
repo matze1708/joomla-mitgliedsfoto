@@ -12,109 +12,210 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Helper;
 
 use Joomla\CMS\Factory;
 use Joomla\Database\DatabaseInterface;
+use Joomla\Database\DatabaseQuery;
 use Joomla\Database\ParameterType;
 
 /**
- * Liest die (synchronisierte) Joomla-Mitgliedertabelle live. Tabelle und Spalten sind in den Optionen konfiguriert.
- * Es werden keine Stammdaten kopiert.
+ * Liest die Mitgliederstammdaten live aus Joomla. Es werden keine Stammdaten kopiert.
+ *
+ * Zwei Quellen (Optionen → „Datenquelle“):
+ *  - „benutzer“: Joomla-Benutzer (#__users) mit Benutzerfeldern (#__fields / #__fields_values)
+ *  - „tabelle“:  beliebige Tabelle mit konfigurierbaren Spalten
+ *
+ * Alle Namen aus den Optionen werden gegen eine Whitelist geprüft und nie ungeprüft in SQL eingesetzt.
  */
 final class Mitglieder
 {
-    private const PFLICHT = ['nr', 'vorname', 'nachname', 'eintritt'];
-    private const OPTIONAL = ['geburtsdatum', 'email'];
+    public const FELDER = ['nr', 'vorname', 'nachname', 'eintritt', 'geburtsdatum', 'email'];
+    private const PFLICHT = ['nr', 'vorname', 'nachname'];
 
-    /** @return  array<string,string>  logischer Name => Spaltenname (nur gültige, nicht leere) */
-    public static function spalten(): array
+    /** Erlaubte Kernfelder von #__users bzw. daraus abgeleitete Ausdrücke. */
+    private const KERN = ['name', 'username', 'email', 'registerDate', 'name_vorname', 'name_nachname'];
+
+    /** Zulässiges Format einer Mitgliedsnummer (Eingaben werden vor jeder Abfrage geprüft). */
+    public const NR_MUSTER = '/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,49}$/D';
+
+    public static function quelle(): string
     {
-        $spalten = [];
+        return Einstellungen::get('quelle', 'benutzer') === 'tabelle' ? 'tabelle' : 'benutzer';
+    }
 
-        foreach (array_merge(self::PFLICHT, self::OPTIONAL) as $feld) {
-            $name = trim((string) Einstellungen::get('spalte_' . $feld));
+    /**
+     * Zuordnung logischer Felder, nur gültige Einträge.
+     *
+     * @return  array<string,string>  z. B. ['nr' => 'field:12', 'email' => 'core:email'] bzw. ['nr' => 'spalte']
+     */
+    public static function zuordnung(): array
+    {
+        $zuordnung = [];
 
-            if ($name !== '' && self::gueltig($name)) {
-                $spalten[$feld] = $name;
+        foreach (self::FELDER as $feld) {
+            if (self::quelle() === 'tabelle') {
+                $wert = trim((string) Einstellungen::get('spalte_' . $feld));
+
+                if (preg_match('/^[A-Za-z0-9_]{1,64}$/', $wert)) {
+                    $zuordnung[$feld] = $wert;
+                }
+
+                continue;
+            }
+
+            $wert = trim((string) Einstellungen::get('feld_' . $feld));
+
+            if (preg_match('/^field:([1-9][0-9]{0,9})$/', $wert, $m)) {
+                $zuordnung[$feld] = 'field:' . (int) $m[1];
+            } elseif (preg_match('/^core:([A-Za-z_]+)$/', $wert, $m) && \in_array($m[1], self::KERN, true)) {
+                $zuordnung[$feld] = 'core:' . $m[1];
             }
         }
 
-        return $spalten;
+        return $zuordnung;
     }
 
     public static function tabelle(): string
     {
         $tabelle = trim((string) Einstellungen::get('tabelle'));
 
-        return self::gueltig($tabelle, true) ? $tabelle : '';
+        return preg_match('/^(#__)?[A-Za-z0-9_]{1,64}$/', $tabelle) ? $tabelle : '';
     }
 
     public static function konfiguriert(): bool
     {
-        $spalten = self::spalten();
+        $zuordnung = self::zuordnung();
 
         foreach (self::PFLICHT as $feld) {
-            if (!isset($spalten[$feld])) {
+            if (!isset($zuordnung[$feld])) {
                 return false;
             }
         }
 
-        return self::tabelle() !== '';
+        return self::quelle() === 'benutzer' || self::tabelle() !== '';
+    }
+
+    public static function hatFeld(string $feld): bool
+    {
+        return self::konfiguriert() && isset(self::zuordnung()[$feld]);
     }
 
     public static function hatGeburtsdatum(): bool
     {
-        return self::konfiguriert() && isset(self::spalten()['geburtsdatum']);
+        return self::hatFeld('geburtsdatum');
     }
 
-    /** Nur Buchstaben, Ziffern, Unterstrich (Tabelle zusätzlich Präfix-Platzhalter #__). */
-    private static function gueltig(string $name, bool $tabelle = false): bool
+    public static function nrGueltig(string $nr): bool
     {
-        return (bool) preg_match($tabelle ? '/^(#__)?[A-Za-z0-9_]+$/' : '/^[A-Za-z0-9_]+$/', $name);
+        return (bool) preg_match(self::NR_MUSTER, $nr);
+    }
+
+    /** SQL-Ausdruck für ein logisches Feld (nur aus Whitelist-Bausteinen) oder null. */
+    public static function ausdruck(DatabaseInterface $db, string $feld): ?string
+    {
+        $wert = self::zuordnung()[$feld] ?? null;
+
+        if ($wert === null) {
+            return null;
+        }
+
+        if (self::quelle() === 'tabelle') {
+            return $db->quoteName('m.' . $wert);
+        }
+
+        if (str_starts_with($wert, 'field:')) {
+            return $db->quoteName('fv_' . $feld . '.value');
+        }
+
+        $name = $db->quoteName('u.name');
+
+        return match (substr($wert, 5)) {
+            // Name = „Vorname Nachname“: letztes Wort als Nachname, Rest als Vorname
+            'name_nachname' => 'SUBSTRING_INDEX(TRIM(' . $name . "), ' ', -1)",
+            'name_vorname'  => 'TRIM(SUBSTRING(TRIM(' . $name . '), 1, CHAR_LENGTH(TRIM(' . $name . ')) - CHAR_LENGTH(SUBSTRING_INDEX(TRIM('
+                . $name . "), ' ', -1))))",
+            default         => $db->quoteName('u.' . substr($wert, 5)),
+        };
     }
 
     /**
-     * SELECT-Spalten mit festen Aliassen (nr, vorname, nachname, eintritt, geburtsdatum, email).
-     *
-     * @return  string[]
+     * Grundabfrage mit festen Aliassen nr, vorname, nachname, eintritt, geburtsdatum, email.
+     * Nur Mitglieder mit Mitgliedsnummer; bei Benutzerquelle nur nicht gesperrte Konten (Option).
      */
-    public static function selectSpalten(DatabaseInterface $db, string $alias = ''): array
+    public static function basisQuery(DatabaseInterface $db): DatabaseQuery
     {
-        $spalten = self::spalten();
-        $select  = [];
+        $query = $db->getQuery(true);
 
-        foreach (array_merge(self::PFLICHT, self::OPTIONAL) as $feld) {
-            $select[] = isset($spalten[$feld])
-                ? $db->quoteName(($alias !== '' ? $alias . '.' : '') . $spalten[$feld], $feld)
-                : 'NULL AS ' . $db->quoteName($feld);
+        if (self::quelle() === 'tabelle') {
+            $query->from($db->quoteName(self::tabelle(), 'm'));
+        } else {
+            $query->from($db->quoteName('#__users', 'u'));
+
+            foreach (self::zuordnung() as $feld => $wert) {
+                if (str_starts_with($wert, 'field:')) {
+                    $alias = 'fv_' . $feld;
+                    $query->join(
+                        'LEFT',
+                        $db->quoteName('#__fields_values', $alias),
+                        $db->quoteName($alias . '.item_id') . ' = ' . $db->quoteName('u.id')
+                        . ' AND ' . $db->quoteName($alias . '.field_id') . ' = ' . (int) substr($wert, 6)
+                    );
+                }
+            }
+
+            if ((int) Einstellungen::get('nur_aktive', 0)) {
+                $query->where($db->quoteName('u.block') . ' = 0');
+            }
         }
 
-        return $select;
+        foreach (self::FELDER as $feld) {
+            $ausdruck = self::ausdruck($db, $feld);
+            $query->select(($ausdruck ?? 'NULL') . ' AS ' . $db->quoteName($feld));
+        }
+
+        $nr = self::ausdruck($db, 'nr');
+        $query->where($nr . ' IS NOT NULL')->where('TRIM(' . $nr . ") <> ''");
+
+        return $query;
     }
 
     public static function finden(string $mitgliedsnr): ?object
     {
-        if (!self::konfiguriert() || $mitgliedsnr === '' || \strlen($mitgliedsnr) > 50) {
+        $mitgliedsnr = trim($mitgliedsnr);
+
+        if (!self::konfiguriert() || !self::nrGueltig($mitgliedsnr)) {
             return null;
         }
 
         $db    = Factory::getContainer()->get(DatabaseInterface::class);
-        $spalten = self::spalten();
-        $query = $db->getQuery(true)
-            ->select(self::selectSpalten($db))
-            ->from($db->quoteName(self::tabelle()))
-            ->where($db->quoteName($spalten['nr']) . ' = :nr')
+        $query = self::basisQuery($db)
+            ->where('TRIM(' . self::ausdruck($db, 'nr') . ') = :nr')
             ->bind(':nr', $mitgliedsnr, ParameterType::STRING);
 
-        $zeile = $db->setQuery($query, 0, 1)->loadObject();
+        $zeilen = $db->setQuery($query, 0, 2)->loadObjectList();
 
-        if (!$zeile) {
+        // Mitgliedsnummer muss eindeutig sein – bei Doppelungen lieber nichts tun.
+        if (\count($zeilen) !== 1) {
             return null;
         }
 
+        $zeile     = $zeilen[0];
         $zeile->nr = trim((string) $zeile->nr);
 
-        return $zeile;
+        return self::nrGueltig($zeile->nr) ? $zeile : null;
     }
 
-    /** @return  object[]  alle Mitglieder inkl. Fotostatus (status NULL = offen), sortiert nach Name */
+    /** Mitglieder (Alias m bzw. u) links verknüpft mit #__mitgliedsfoto (f), sortiert nach Name. */
+    public static function mitStatusQuery(DatabaseInterface $db): DatabaseQuery
+    {
+        return self::basisQuery($db)
+            ->join(
+                'LEFT',
+                $db->quoteName('#__mitgliedsfoto', 'f'),
+                $db->quoteName('f.mitgliedsnr') . ' = CONVERT(TRIM(' . self::ausdruck($db, 'nr') . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci'
+            )
+            ->order(self::ausdruck($db, 'nachname') . ' ASC')
+            ->order(self::ausdruck($db, 'vorname') . ' ASC');
+    }
+
+    /** @return  object[]  alle Mitglieder inkl. Fotostatus (status NULL = offen) */
     public static function alleMitStatus(): array
     {
         if (!self::konfiguriert()) {
@@ -127,35 +228,42 @@ final class Mitglieder
         return $db->setQuery($query)->loadObjectList() ?: [];
     }
 
-    /** Basis-Query: Mitglieder (m) links verknüpft mit #__mitgliedsfoto (f). */
-    public static function mitStatusQuery(DatabaseInterface $db)
-    {
-        $spalten = self::spalten();
-
-        return $db->getQuery(true)
-            ->select(self::selectSpalten($db, 'm'))
-            ->from($db->quoteName(self::tabelle(), 'm'))
-            ->join(
-                'LEFT',
-                $db->quoteName('#__mitgliedsfoto', 'f') . ' ON ' . $db->quoteName('f.mitgliedsnr')
-                . ' = CONVERT(' . $db->quoteName('m.' . $spalten['nr']) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci'
-            )
-            ->order($db->quoteName('m.' . $spalten['nachname']) . ' ASC')
-            ->order($db->quoteName('m.' . $spalten['vorname']) . ' ASC');
-    }
-
     /** Vergleicht eine Eingabe (TT.MM.JJJJ oder JJJJ-MM-TT) mit dem gespeicherten Geburtsdatum. */
     public static function geburtsdatumPasst(object $mitglied, string $eingabe): bool
     {
-        $soll = self::normalisiereDatum((string) ($mitglied->geburtsdatum ?? ''));
+        $soll = self::normalisiereDatum(self::utcInOrtszeit((string) ($mitglied->geburtsdatum ?? '')));
         $ist  = self::normalisiereDatum($eingabe);
 
         return $soll !== null && $ist !== null && hash_equals($soll, $ist);
     }
 
+    /**
+     * Kalender-Benutzerfelder speichern ggf. in UTC („1980-05-16 22:00:00“ = 17.05.1980 in Deutschland).
+     * Werte mit Uhrzeit ungleich 00:00:00 werden daher in die Zeitzone der Website umgerechnet.
+     */
+    public static function utcInOrtszeit(string $wert, ?string $zeitzone = null): string
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}[ T](\d{2}):(\d{2}):(\d{2})/', trim($wert), $m) || $m[1] . $m[2] . $m[3] === '000000') {
+            return $wert;
+        }
+
+        try {
+            $zeitzone ??= class_exists(Factory::class) ? (string) Factory::getApplication()->get('offset', 'UTC') : 'UTC';
+            $datum = new \DateTimeImmutable(substr(trim($wert), 0, 19), new \DateTimeZone('UTC'));
+
+            return $datum->setTimezone(new \DateTimeZone($zeitzone ?: 'UTC'))->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return $wert;
+        }
+    }
+
     public static function normalisiereDatum(string $text): ?string
     {
         $text = trim($text);
+
+        if (\strlen($text) > 32) {
+            return null;
+        }
 
         if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $text, $m)) {
             [$j, $mo, $t] = [(int) $m[3], (int) $m[2], (int) $m[1]];
@@ -165,6 +273,6 @@ final class Mitglieder
             return null;
         }
 
-        return checkdate($mo, $t, $j) ? sprintf('%04d-%02d-%02d', $j, $mo, $t) : null;
+        return checkdate($mo, $t, $j) && $j > 1900 ? sprintf('%04d-%02d-%02d', $j, $mo, $t) : null;
     }
 }

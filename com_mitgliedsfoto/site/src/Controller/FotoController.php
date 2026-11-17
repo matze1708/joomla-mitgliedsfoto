@@ -46,7 +46,7 @@ class FotoController extends BaseController
 
         $input   = $this->app->getInput();
         $nr      = trim($input->post->getString('mitgliedsnr', ''));
-        $datum   = trim($input->post->getString('geburtsdatum', ''));
+        $datum   = mb_substr(trim($input->post->getString('geburtsdatum', '')), 0, 10);
         $mitglied = Mitglieder::finden($nr);
 
         if (!$mitglied || !Mitglieder::geburtsdatumPasst($mitglied, $datum)) {
@@ -69,10 +69,15 @@ class FotoController extends BaseController
                 throw new FotoException('JINVALID_TOKEN_NOTICE');
             }
 
+            if (Begrenzung::blockiert()) {
+                throw new FotoException('COM_MITGLIEDSFOTO_ERR_ZU_VIELE_VERSUCHE');
+            }
+
             $mitglied = Mitglieder::finden(trim($input->post->getString('m', '')));
 
             // Token erneut serverseitig prüfen; generisch bei Fehler.
             if (!$mitglied || !Token::pruefen($mitglied->nr, $input->post->getString('t', ''), Einstellungen::schluessel())) {
+                Begrenzung::fehlversuch();
                 throw new FotoException('COM_MITGLIEDSFOTO_ERR_LINK');
             }
 
@@ -80,13 +85,9 @@ class FotoController extends BaseController
                 throw new FotoException('COM_MITGLIEDSFOTO_ERR_BESTAETIGUNG');
             }
 
-            $datei = $input->files->get('foto', [], 'raw');
+            $datei = Einreichung::uploadPfad($input->files->get('foto', null, 'raw'));
 
-            if (empty($datei['tmp_name']) || ($datei['error'] ?? \UPLOAD_ERR_NO_FILE) !== \UPLOAD_ERR_OK || !is_uploaded_file($datei['tmp_name'])) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_UPLOAD');
-            }
-
-            Einreichung::speichern($mitglied, $datei['tmp_name'], 'web', null);
+            Einreichung::speichern($mitglied, $datei, 'web', null);
 
             $this->antwort(true, Text::_('COM_MITGLIEDSFOTO_OK_EINGEREICHT'));
         } catch (FotoException $e) {

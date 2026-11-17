@@ -18,6 +18,12 @@ pruefe('Token falsche Nr', !Token::pruefen('1235', $t, 'geheim'));
 pruefe('Token falscher Schlüssel', !Token::pruefen('1234', $t, 'anders'));
 pruefe('Token leer', !Token::pruefen('1234', '', 'geheim') && !Token::pruefen('', $t, 'geheim'));
 pruefe('Token kein MD5', strlen($t) !== 32);
+pruefe('Token Großbuchstaben/Müll abgelehnt', !Token::pruefen('1234', strtoupper($t), 'geheim') && !Token::pruefen('1234', $t . "'", 'geheim') && !Token::pruefen('1234', substr($t, 0, 63), 'geheim'));
+
+// Mitgliedsnummer (Eingabe-Whitelist)
+pruefe('Nr gültig', Mitglieder::nrGueltig('9001') && Mitglieder::nrGueltig('A-12/3') && Mitglieder::nrGueltig('0042'));
+pruefe('Nr SQL/HTML/Pfad abgelehnt', !Mitglieder::nrGueltig("1' OR '1'='1") && !Mitglieder::nrGueltig('<script>') && !Mitglieder::nrGueltig('../1') && !Mitglieder::nrGueltig('') && !Mitglieder::nrGueltig(str_repeat('1', 51)) && !Mitglieder::nrGueltig("1\n2"));
+pruefe('UTC-Kalenderwert -> Ortszeit', Mitglieder::utcInOrtszeit('1980-05-16 22:00:00', 'Europe/Berlin') === '1980-05-17' && Mitglieder::utcInOrtszeit('1980-05-17 00:00:00', 'Europe/Berlin') === '1980-05-17 00:00:00');
 
 // Dateiname
 pruefe('Umlaute/ß', Dateiname::erzeugen('Müller-Lüdenscheidt', 'Jörg Ärmel', '007') === 'Mueller-Luedenscheidt_Joerg-Aermel_007.jpg');
@@ -43,8 +49,19 @@ function bild(int $w, int $h, string $typ = 'jpeg'): string {
 $ok = Bild::verarbeiten(bild(1200, 1600), 5000000);
 $i = getimagesizefromstring($ok);
 pruefe('Re-Encode 600x800 JPEG', $i[0] === 600 && $i[1] === 800 && $i[2] === IMAGETYPE_JPEG);
-$i = getimagesizefromstring(Bild::verarbeiten(bild(450, 600, 'png'), 5000000));
-pruefe('PNG -> JPEG 600x800', $i[0] === 600 && $i[1] === 800 && $i[2] === IMAGETYPE_JPEG);
+$i = getimagesizefromstring(Bild::verarbeiten(bild(450, 600), 5000000));
+pruefe('Kleineres JPEG -> 600x800', $i[0] === 600 && $i[1] === 800);
+pruefe('PNG abgelehnt (nur JPEG aus dem Browser)', wirft(fn() => Bild::verarbeiten(bild(600, 800, 'png'), 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
+pruefe('Riesenbild abgelehnt (Dekompressionsbombe)', wirft(fn() => Bild::verarbeiten(bild(3000, 4000), 50000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
+$f = tempnam($tmp, 'mf'); file_put_contents($f, "\xFF\xD8\xFF<?php system('id'); ?>");
+pruefe('JPEG-Magic mit PHP-Code abgelehnt', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
+$f = bild(600, 800); $j = file_get_contents($f);
+file_put_contents($f, substr($j, 0, 2) . "\xFF\xFE\x00\x20<?php system('id'); ?>XXXXXXXXXX" . substr($j, 2)); // Code im JPEG-Kommentar
+$out = Bild::verarbeiten($f, 5000000);
+pruefe('PHP-Code im JPEG-Kommentar wird entfernt', !str_contains($out, '<?php') && !str_contains($out, 'system('));
+$im = imagecreatetruecolor(600, 800); $f = tempnam($tmp, 'mf'); imagejpeg($im, $f);
+file_put_contents($f, substr(file_get_contents($f), 0, 2) . "\xFF\xE1\x00\x10Exif\x00\x00GPSDATA!" . substr(file_get_contents($f), 2));
+pruefe('EXIF/Metadaten entfernt', !str_contains(Bild::verarbeiten($f, 5000000), 'GPSDATA'));
 pruefe('Zu klein', wirft(fn() => Bild::verarbeiten(bild(150, 200), 5000000), 'COM_MITGLIEDSFOTO_ERR_ZU_KLEIN'));
 pruefe('Quer abgelehnt', wirft(fn() => Bild::verarbeiten(bild(800, 600), 5000000), 'COM_MITGLIEDSFOTO_ERR_SEITENVERHAELTNIS'));
 pruefe('Größenlimit', wirft(fn() => Bild::verarbeiten(bild(1200, 1600), 1000), 'COM_MITGLIEDSFOTO_ERR_GROESSE'));
@@ -52,7 +69,7 @@ $f = tempnam($tmp, 'mf'); file_put_contents($f, '<?php echo 1; ?>');
 pruefe('Kein Bild (PHP-Datei)', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
 $f = tempnam($tmp, 'mf'); file_put_contents($f, "GIF89a\x01\x00\x01\x00\x00\x00\x00;");
 pruefe('GIF abgelehnt', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
-$f = bild(1200, 1600); file_put_contents($f, "<?php system('id'); ?>", FILE_APPEND);
+$f = bild(600, 800); file_put_contents($f, "<?php system('id'); ?>", FILE_APPEND);
 $out = Bild::verarbeiten($f, 5000000);
 pruefe('Angehängter Code wird verworfen', !str_contains($out, '<?php'));
 

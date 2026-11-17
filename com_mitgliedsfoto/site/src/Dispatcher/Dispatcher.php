@@ -16,8 +16,15 @@ class Dispatcher extends ComponentDispatcher
 {
     public function dispatch()
     {
-        // Eine gemeinsame Sprachdatei (liegt im Administrator-Sprachordner) für Frontend und Backend.
-        $this->app->getLanguage()->load('com_mitgliedsfoto', JPATH_ADMINISTRATOR);
+        // Eine gemeinsame Sprachdatei (liegt im Administrator-Sprachordner) für Frontend und Backend;
+        // Texte gibt es nur auf Deutsch – bei anderer Website-Sprache wird de-DE nachgeladen.
+        $sprache = $this->app->getLanguage();
+        $sprache->load('com_mitgliedsfoto', JPATH_ADMINISTRATOR);
+
+        if (!$sprache->hasKey('COM_MITGLIEDSFOTO_SEITENTITEL')) {
+            $sprache->load('com_mitgliedsfoto', JPATH_ADMINISTRATOR, 'de-DE', true)
+                || $sprache->load('com_mitgliedsfoto', JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto', 'de-DE', true);
+        }
 
         parent::dispatch();
     }

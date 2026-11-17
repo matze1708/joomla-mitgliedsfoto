@@ -22,7 +22,7 @@ final class Token
 
     public static function pruefen(string $mitgliedsnr, string $token, string $schluessel): bool
     {
-        if ($mitgliedsnr === '' || $schluessel === '' || $token === '') {
+        if ($mitgliedsnr === '' || $schluessel === '' || !preg_match('/^[0-9a-f]{64}$/', $token)) {
             return false;
         }
 

@@ -10,11 +10,13 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\View\Mitglieder;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\GenericDataException;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Toolbar\ToolbarHelper;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Mitglieder;
 
 class HtmlView extends BaseHtmlView
@@ -41,6 +43,10 @@ class HtmlView extends BaseHtmlView
             if (\count($errors = $model->getErrors())) {
                 throw new GenericDataException(implode("\n", $errors), 500);
             }
+        }
+
+        if (Einstellungen::speicherordnerImWebroot()) {
+            Factory::getApplication()->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_WEBROOT'), 'warning');
         }
 
         $this->addToolbar();

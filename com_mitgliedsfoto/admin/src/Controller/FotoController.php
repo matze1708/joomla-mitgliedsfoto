@@ -47,13 +47,9 @@ class FotoController extends BaseController
                 throw new FotoException('COM_MITGLIEDSFOTO_ERR_BESTAETIGUNG');
             }
 
-            $datei = $input->files->get('foto', [], 'raw');
+            $datei = Einreichung::uploadPfad($input->files->get('foto', null, 'raw'));
 
-            if (empty($datei['tmp_name']) || ($datei['error'] ?? \UPLOAD_ERR_NO_FILE) !== \UPLOAD_ERR_OK || !is_uploaded_file($datei['tmp_name'])) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_UPLOAD');
-            }
-
-            $mailOk = Einreichung::speichern($mitglied, $datei['tmp_name'], 'vorstand', (int) $this->app->getIdentity()->id);
+            $mailOk = Einreichung::speichern($mitglied, $datei, 'vorstand', (int) $this->app->getIdentity()->id);
 
             $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_OK_ERFASST', $mitglied->vorname . ' ' . $mitglied->nachname), 'success');
 
@@ -85,6 +81,8 @@ class FotoController extends BaseController
         $this->app->setHeader('Content-Length', (string) filesize($pfad), true);
         $this->app->setHeader('Cache-Control', 'private, no-store', true);
         $this->app->setHeader('X-Content-Type-Options', 'nosniff', true);
+        $this->app->setHeader('Content-Security-Policy', "default-src 'none'; sandbox", true);
+        $this->app->setHeader('Content-Disposition', 'inline; filename="' . basename($foto->dateiname) . '"', true);
         $this->app->sendHeaders();
         readfile($pfad);
         $this->app->close();
@@ -210,6 +208,11 @@ class FotoController extends BaseController
 
     private function json(bool $ok, string $nachricht, string $weiter = ''): void
     {
+        // Meldungen für die nächste Seite (nach dem Weiterleiten im Browser) in der Session ablegen.
+        if ($weiter !== '' && \count($this->app->getMessageQueue())) {
+            $this->app->getSession()->set('application.queue', $this->app->getMessageQueue());
+        }
+
         $this->app->allowCache(false);
         $this->app->setHeader('Content-Type', 'application/json; charset=utf-8', true);
         $this->app->sendHeaders();

@@ -1,17 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <config>
-	<fieldset name="mitglieder" label="COM_MITGLIEDSFOTO_CFG_MITGLIEDER" description="COM_MITGLIEDSFOTO_CFG_MITGLIEDER_DESC">
-		<field name="tabelle" type="text" label="COM_MITGLIEDSFOTO_CFG_TABELLE" description="COM_MITGLIEDSFOTO_CFG_TABELLE_DESC" hint="#__mitglieder" default="" />
-		<field name="spalte_nr" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_NR" default="" />
-		<field name="spalte_vorname" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_VORNAME" default="" />
-		<field name="spalte_nachname" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_NACHNAME" default="" />
-		<field name="spalte_eintritt" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_EINTRITT" default="" />
-		<field name="spalte_geburtsdatum" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_GEBURTSDATUM" description="COM_MITGLIEDSFOTO_CFG_SPALTE_GEBURTSDATUM_DESC" default="" />
-		<field name="spalte_email" type="text" label="COM_MITGLIEDSFOTO_CFG_SPALTE_EMAIL" description="COM_MITGLIEDSFOTO_CFG_SPALTE_EMAIL_DESC" default="" />
+	<fieldset name="mitglieder" label="COM_MITGLIEDSFOTO_CFG_MITGLIEDER" description="COM_MITGLIEDSFOTO_CFG_MITGLIEDER_DESC" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+		<field name="quelle" type="list" label="COM_MITGLIEDSFOTO_CFG_QUELLE" description="COM_MITGLIEDSFOTO_CFG_QUELLE_DESC" default="benutzer" validate="options">
+			<option value="benutzer">COM_MITGLIEDSFOTO_CFG_QUELLE_BENUTZER</option>
+			<option value="tabelle">COM_MITGLIEDSFOTO_CFG_QUELLE_TABELLE</option>
+		</field>
+		<field name="feld_nr" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_NR" description="COM_MITGLIEDSFOTO_CFG_FELD_NR_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="feld_vorname" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_VORNAME" description="COM_MITGLIEDSFOTO_CFG_FELD_VORNAME_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="feld_nachname" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_NACHNAME" description="COM_MITGLIEDSFOTO_CFG_FELD_NACHNAME_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="feld_eintritt" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_EINTRITT" description="COM_MITGLIEDSFOTO_CFG_FELD_EINTRITT_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="feld_geburtsdatum" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_GEBURTSDATUM" description="COM_MITGLIEDSFOTO_CFG_FELD_GEBURTSDATUM_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="feld_email" type="mitgliedsfeld" label="COM_MITGLIEDSFOTO_CFG_FELD_EMAIL" description="COM_MITGLIEDSFOTO_CFG_FELD_EMAIL_DESC" default="" showon="quelle:benutzer" addfieldprefix="SvAlzey\Component\Mitgliedsfoto\Administrator\Field">
+			<option value="">COM_MITGLIEDSFOTO_CFG_NICHT_VERWENDET</option>
+		</field>
+		<field name="nur_aktive" type="radio" layout="joomla.form.field.radio.switcher" label="COM_MITGLIEDSFOTO_CFG_NUR_AKTIVE" description="COM_MITGLIEDSFOTO_CFG_NUR_AKTIVE_DESC" default="0" showon="quelle:benutzer" filter="integer">
+			<option value="0">JNO</option>
+			<option value="1">JYES</option>
+		</field>
+		<field name="tabelle" type="text" label="COM_MITGLIEDSFOTO_CFG_TABELLE" description="COM_MITGLIEDSFOTO_CFG_TABELLE_DESC" hint="#__mitglieder" default="" showon="quelle:tabelle" pattern="^(#__)?[A-Za-z0-9_]{1,64}$" />
+		<field name="spalte_nr" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_NR" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_vorname" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_VORNAME" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_nachname" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_NACHNAME" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_eintritt" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_EINTRITT" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_geburtsdatum" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_GEBURTSDATUM" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
+		<field name="spalte_email" type="text" label="COM_MITGLIEDSFOTO_CFG_FELD_EMAIL" default="" showon="quelle:tabelle" pattern="^[A-Za-z0-9_]{0,64}$" />
 	</fieldset>
 
 	<fieldset name="foto" label="COM_MITGLIEDSFOTO_CFG_FOTO" description="COM_MITGLIEDSFOTO_CFG_FOTO_DESC">
-		<field name="speicherordner" type="text" label="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER" description="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER_DESC" default="" />
+		<field name="speicherordner" type="text" pattern="^(/|[A-Za-z]:[\\/]).*$" label="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER" description="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER_DESC" default="" />
 		<field name="max_upload_kb" type="number" label="COM_MITGLIEDSFOTO_CFG_MAX_UPLOAD" default="8192" min="100" max="30000" filter="integer" />
 		<field name="min_breite" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_BREITE" description="COM_MITGLIEDSFOTO_CFG_MIN_DESC" default="360" min="150" max="600" filter="integer" />
 		<field name="min_hoehe" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_HOEHE" default="480" min="200" max="800" filter="integer" />
