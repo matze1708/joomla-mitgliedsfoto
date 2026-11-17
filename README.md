@@ -12,10 +12,10 @@ der Vorstand erfasst Fotos für Mitglieder ohne Web-Zugang im Backend. Konzept: 
 
 Automatisch per GitHub Action (`.github/workflows/build.yml`):
 
-- **Jeder Push / Pull Request**: Prüfung + Tests + ZIP. Das ZIP liegt im Lauf unter *Actions → Build → Artifacts*.
-- **Release**: Version in `com_mitgliedsfoto/mitgliedsfoto.xml` erhöhen, committen, dann Tag setzen und pushen:
-  `git tag v1.0.0 && git push origin v1.0.0`. Die Action legt ein GitHub-Release mit `com_mitgliedsfoto.zip` an
-  (Tag und Manifest-Version müssen übereinstimmen). Download dann unter *Releases*.
+- **Pull Request**: Prüfung (PHP-Syntax, XML, JSON, JS), Tests und Probe-Build – kein Release.
+- **Merge/Push auf `master`**: zusätzlich GitHub-Release `v<Version>` (Version aus `com_mitgliedsfoto/mitgliedsfoto.xml`)
+  mit `com_mitgliedsfoto.zip` → Download unter *Releases*. Für eine neue Version vor dem Merge die `<version>` im Manifest erhöhen;
+  bei gleicher Version wird das ZIP im bestehenden Release ersetzt.
 
 Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender Joomla-Mailversand.
 
