@@ -1,0 +1,1 @@
+-- 1.2.0: keine Schemaänderung (Auto-Update über GitHub-Releases)
