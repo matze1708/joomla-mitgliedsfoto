@@ -1,0 +1,1 @@
+-- 1.2.2: keine Schemaänderung (genaue Ursache bei Mailfehlern)

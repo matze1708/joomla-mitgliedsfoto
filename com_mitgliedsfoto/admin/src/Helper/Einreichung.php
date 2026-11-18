@@ -10,11 +10,17 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Helper;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
+
 /**
  * Gemeinsamer Ablauf für Web-Einreichung und Vorstandserfassung.
  */
 final class Einreichung
 {
+    /** Lesbare Ursache des letzten fehlgeschlagenen Mailversands (für Admin-Meldungen). */
+    public static string $mailFehler = '';
+
     /**
      * Prüft den Upload-Eintrag aus $_FILES und liefert den temporären Pfad.
      *
@@ -74,12 +80,22 @@ final class Einreichung
 
     public static function mailSenden(object $mitglied, string $quelle, string $dateiname): bool
     {
+        self::$mailFehler = '';
+
         try {
             Mail::senden($mitglied, $quelle, $dateiname);
             Fotos::mailGesendet((string) $mitglied->nr);
 
             return true;
         } catch (FotoException $e) {
+            self::$mailFehler = Text::_($e->getMessage()) . (Mail::$details !== '' ? ' (' . Mail::$details . ')' : '');
+
+            try {
+                Log::addLogger(['text_file' => 'com_mitgliedsfoto.php'], Log::ALL, ['com_mitgliedsfoto']);
+                Log::add('Mail für Mitglied ' . $mitglied->nr . ' nicht gesendet: ' . self::$mailFehler, Log::WARNING, 'com_mitgliedsfoto');
+            } catch (\Throwable $ignorieren) {
+            }
+
             return false;
         }
     }
