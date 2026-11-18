@@ -52,6 +52,12 @@ Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender
    (sonst würden Formular-Token und Namen zwischengespeichert).
 5. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
 
+## Ausweis-Vorschau
+
+Die Seiten zeigen Vorder- und Rückseite des neuen Mitgliedsausweises (Design: Tomoschat Design, `media/images/ausweis-*.webp`).
+Beim Zuschnitt erscheint das Foto live im Fotofeld der Rückseite, dazu Vorname, Nachname, Mitgliedsnummer und „Mitglied seit“.
+Abschaltbar unter Optionen → Foto und Speicherort → „Ausweis-Vorschau anzeigen“. Alle Texte für Mitglieder sind in Du-Form.
+
 ## Wege zur Fotoerfassung
 
 | Weg | Wer | Prüfung | Ergebnis |

@@ -24,6 +24,8 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     <?php echo LayoutHelper::render('uploader', [
         'url'          => Route::_('index.php?option=com_mitgliedsfoto&task=foto.erfassen', false),
         'felder'       => ['nr' => $this->mitglied->nr],
+        'ausweis'      => ['vorname' => $this->mitglied->vorname, 'nachname' => $this->mitglied->nachname, 'nr' => $this->mitglied->nr, 'seit' => \SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe::datumAnzeige($this->mitglied->eintritt ?? '')],
+
         'binIch'       => false,
         'einwilligung' => Text::_('COM_MITGLIEDSFOTO_EINWILLIGUNG_VORSTAND'),
         'absendenText' => Text::_('COM_MITGLIEDSFOTO_SPEICHERN'),

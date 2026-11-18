@@ -33,6 +33,11 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         <div class="alert alert-info"><?php echo Text::_('COM_MITGLIEDSFOTO_BEREITS'); ?></div>
 
     <?php elseif ($this->zustand === 'ident') : ?>
+        <p class="lead"><?php echo Text::_('COM_MITGLIEDSFOTO_WERBUNG_1'); ?></p>
+        <?php if ((int) Einstellungen::get('ausweis_vorschau', 1)) : ?>
+            <?php echo LayoutHelper::render('ausweis', [], JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/layouts'); ?>
+        <?php endif; ?>
+        <p><?php echo Text::_('COM_MITGLIEDSFOTO_WERBUNG_2'); ?></p>
         <p><?php echo Text::_('COM_MITGLIEDSFOTO_IDENT_INTRO'); ?></p>
         <form method="post" action="<?php echo $e($this->identUrl); ?>" class="mb-3" style="max-width:32rem" autocomplete="off">
             <div class="mb-3">
@@ -64,6 +69,8 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         <?php echo LayoutHelper::render('uploader', [
             'url'          => $this->submitUrl . (str_contains($this->submitUrl, '?') ? '&' : '?') . 'task=foto.absenden',
             'felder'       => ['frei' => 1],
+            'ausweis'      => ['vorname' => $this->mitglied->vorname, 'nachname' => $this->mitglied->nachname, 'nr' => $this->mitglied->nr, 'seit' => \SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe::datumAnzeige($this->mitglied->eintritt ?? '')],
+
             'binIch'       => true,
             'einwilligung' => $this->einwilligung,
             'absendenText' => Text::_('COM_MITGLIEDSFOTO_ABSENDEN'),
@@ -78,6 +85,8 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         <?php echo LayoutHelper::render('uploader', [
             'url'          => $this->submitUrl . (str_contains($this->submitUrl, '?') ? '&' : '?') . 'task=foto.absenden',
             'felder'       => ['m' => $this->mitglied->nr, 't' => $this->token],
+            'ausweis'      => ['vorname' => $this->mitglied->vorname, 'nachname' => $this->mitglied->nachname, 'nr' => $this->mitglied->nr, 'seit' => \SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe::datumAnzeige($this->mitglied->eintritt ?? '')],
+
             'binIch'       => true,
             'einwilligung' => $this->einwilligung,
             'absendenText' => Text::_('COM_MITGLIEDSFOTO_ABSENDEN'),

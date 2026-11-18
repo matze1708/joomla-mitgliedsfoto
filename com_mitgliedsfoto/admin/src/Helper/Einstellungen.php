@@ -26,6 +26,7 @@ final class Einstellungen
     /** Standardwerte (identisch mit config.xml): Joomla speichert diese bei der Installation nicht. */
     private const STANDARD = [
         'max_upload_kb'      => 8192,
+        'ausweis_vorschau'   => 1,
         'min_breite'         => 360,
         'min_hoehe'          => 480,
         'ratelimit_versuche' => 5,

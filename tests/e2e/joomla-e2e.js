@@ -8,13 +8,13 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  // --- QR-Weg
  const qr=async(nr,vn,nn,gb)=>{await p.goto(SITE);await p.fill('#mf-nr',nr);await p.fill('#mf-vn',vn);await p.fill('#mf-nn',nn);await p.fill('#mf-gb',gb);await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);};
  await qr('9001','Jörg','Müller-Groß','18.05.1980');
- ok('QR: falsches Geburtsdatum -> generische Meldung',(await p.content()).includes('konnten nicht bestätigt werden'));
+ ok('QR: falsches Geburtsdatum -> generische Meldung',(await p.content()).includes('konnten wir leider nicht bestätigen'));
  await qr("9001' OR '1'='1",'Jörg','Müller-Groß','17.05.1980');
- ok('QR: SQL-Injection-Versuch -> Eingabe abgelehnt',(await p.content()).includes('prüfen Sie Ihre Eingaben'));
+ ok('QR: SQL-Injection-Versuch -> Eingabe abgelehnt',(await p.content()).includes('Prüf bitte deine Eingaben'));
  await qr('9001','Hans','Müller-Groß','17.05.1980');
- ok('QR: bekannte Nr, falscher Name -> generische Meldung',(await p.content()).includes('konnten nicht bestätigt werden'));
+ ok('QR: bekannte Nr, falscher Name -> generische Meldung',(await p.content()).includes('konnten wir leider nicht bestätigen'));
  await qr('9001','<script>','Müller','17.05.1980');
- ok('QR: HTML im Namen -> Eingabe abgelehnt',(await p.content()).includes('prüfen Sie Ihre Eingaben')&&!(await p.content()).includes('<script>M'));
+ ok('QR: HTML im Namen -> Eingabe abgelehnt',(await p.content()).includes('Prüf bitte deine Eingaben')&&!(await p.content()).includes('<script>M'));
  sql("DELETE FROM jos_mitgliedsfoto_versuche");
  await qr('9001','joerg','mueller gross','17.05.1980');
  ok('QR: richtige Daten (Schreibweise egal) -> persönlicher Link',/m=9001&t=[0-9a-f]{64}/.test(p.url()));
@@ -46,7 +46,7 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  await p.waitForFunction(()=>!document.querySelector('.mf-absenden').disabled);
  await p.check('#mf-einwilligung');await p.click('.mf-absenden');
  await p.waitForSelector('.mf-fertig:not(.d-none)',{timeout:15000});
- ok('Upload erfolgreich',(await p.locator('.mf-fertig').textContent()).includes('Vielen Dank'));
+ ok('Upload erfolgreich',(await p.locator('.mf-fertig').textContent()).includes('Danke!'));
  const row=sql("SELECT status,dateiname,mail_gesendet_am IS NOT NULL,erfasst_von IS NULL FROM jos_mitgliedsfoto WHERE mitgliedsnr='9001'");
  ok('DB-Zeile: '+row,row==='eingereicht\tMueller-Gross_Joerg_9001.jpg\t1\t1');
  const datei='/var/www/joomla/administrator/components/com_mitgliedsfoto/fotos/Mueller-Gross_Joerg_9001.jpg';
@@ -58,7 +58,7 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('Mail: Anhang',m.includes('Mueller-Gross_Joerg_9001.jpg')&&m.includes('image/jpeg'));
  ok('Mail: Empfänger',m.includes('To: ausweisfoto@example.org'));
  await p.goto(link);
- ok('Erneut öffnen -> bereits eingereicht',(await p.content()).includes('bereits eingereicht'));
+ ok('Erneut öffnen -> bereits eingereicht',(await p.content()).includes('schon bei uns'));
  await p.goto(SITE+'?m=9001&t='+'a'.repeat(64));
  ok('Falscher Token -> neutrale Meldung',(await p.content()).includes('ungültig oder abgelaufen'));
  await p.goto(SITE+'?m=9999&t='+'a'.repeat(64));
@@ -75,19 +75,19 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  sql("DELETE FROM jos_mitgliedsfoto_versuche");
  // --- QR mit unbekannter Mitgliedsnummer -> unbestätigt
  await qr('8001','Paul','Neu','01.02.1990');
- ok('QR unbekannt: Formular mit Hinweis',p.url().includes('frei=1')&&(await p.content()).includes('nicht automatisch zugeordnet')&&(await p.content()).includes('Paul Neu'));
+ ok('QR unbekannt: Formular mit Hinweis',p.url().includes('frei=1')&&(await p.content()).includes('nicht automatisch zuordnen')&&(await p.content()).includes('Paul Neu'));
  await p.check('#mf-binich');await p.setInputFiles('.mf-file-datei','quer.jpg');
  await p.waitForFunction(()=>!document.querySelector('.mf-absenden').disabled);
  await p.check('#mf-einwilligung');await p.click('.mf-absenden');
  await p.waitForSelector('.mf-fertig:not(.d-none)',{timeout:15000});
- ok('QR unbekannt: Upload erfolgreich',(await p.locator('.mf-fertig').textContent()).includes('Vielen Dank'));
+ ok('QR unbekannt: Upload erfolgreich',(await p.locator('.mf-fertig').textContent()).includes('Danke!'));
  ok('QR unbekannt: Zeile unbestätigt mit Name/Geburtsdatum',sql("SELECT CONCAT_WS('|',status,geprueft,vorname,nachname,geburtsdatum,dateiname) FROM jos_mitgliedsfoto WHERE mitgliedsnr='8001'")==='eingereicht|0|Paul|Neu|1990-02-01|Neu_Paul_8001.jpg');
  const m8001=fs.readdirSync(process.env.MAILS).map(f=>fs.readFileSync(process.env.MAILS+'/'+f,'utf8')).find(x=>x.includes('FOTO|8001'))||'';
  ok('QR unbekannt: Mail mit Geprueft: nein + Geburtsdatum',m8001.includes('Geprueft: nein')&&m8001.includes('Geburtsdatum: 01.02.1990')&&m8001.includes('Quelle: web'));
  await p.goto(SITE+'?frei=1');
  ok('QR unbekannt: Sitzung danach verbraucht',(await p.locator('.mf-uploader').count())===0);
  await qr('8001','Paul','Neu','01.02.1990');
- ok('QR unbekannt: zweites Mal -> bereits eingereicht',(await p.content()).includes('bereits eingereicht'));
+ ok('QR unbekannt: zweites Mal -> bereits eingereicht',(await p.content()).includes('schon bei uns'));
  const fremd=await (await b.newContext()).newPage();await fremd.goto(SITE+'?frei=1');
  ok('QR unbekannt: ?frei=1 ohne Sitzung -> nur Eingabeformular',(await fremd.locator('#mf-nr').count())===1&&(await fremd.locator('.mf-uploader').count())===0);
  const mailCount=(()=>{const x=fs.readdirSync(process.env.MAILS).map(f=>fs.readFileSync(process.env.MAILS+'/'+f,'utf8'));return x.find(y=>y.includes('FOTO|9001'))||'';})();
