@@ -41,12 +41,21 @@ final class Mail
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_MAIL_AUS');
         }
 
-        $body = implode("\n", [
+        $zeilen = [
             'Mitgliedsnummer: ' . self::zeile($mitglied->nr),
             'Vorname: ' . self::zeile($mitglied->vorname),
             'Nachname: ' . self::zeile($mitglied->nachname),
             'Quelle: ' . ($quelle === 'vorstand' ? 'vorstand' : 'web'),
-        ]) . "\n";
+            'Geprueft: ' . ((int) ($mitglied->geprueft ?? 1) ? 'ja' : 'nein'),
+        ];
+
+        $geburtsdatum = Eingabe::datumDeutsch(Mitglieder::normalisiereDatum(Mitglieder::utcInOrtszeit((string) ($mitglied->geburtsdatum ?? ''))));
+
+        if ($geburtsdatum !== '') {
+            $zeilen[] = 'Geburtsdatum: ' . $geburtsdatum;
+        }
+
+        $body = implode("\n", $zeilen) . "\n";
 
         try {
             $mailer = Factory::getContainer()->get(MailerFactoryInterface::class)->createMailer();

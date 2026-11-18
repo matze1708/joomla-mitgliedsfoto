@@ -243,6 +243,33 @@ final class Mitglieder
         return self::nrGueltig($zeile->nr) ? $zeile : null;
     }
 
+    /** Joomla-Mitglied oder – falls ohne Joomla-Eintrag erfasst – Daten aus #__mitgliedsfoto. */
+    public static function oderFrei(string $mitgliedsnr): ?object
+    {
+        $mitglied = self::finden($mitgliedsnr);
+
+        if ($mitglied) {
+            $mitglied->geprueft = 1;
+
+            return $mitglied;
+        }
+
+        $foto = self::nrGueltig(trim($mitgliedsnr)) ? Fotos::finden(trim($mitgliedsnr)) : null;
+
+        if (!$foto || $foto->vorname === null) {
+            return null;
+        }
+
+        return (object) [
+            'nr'           => $foto->mitgliedsnr,
+            'vorname'      => $foto->vorname,
+            'nachname'     => $foto->nachname,
+            'geburtsdatum' => $foto->geburtsdatum,
+            'email'        => null,
+            'geprueft'     => (int) $foto->geprueft,
+        ];
+    }
+
     /** Mitglieder (Alias m bzw. u) links verknüpft mit #__mitgliedsfoto (f), sortiert nach Name. */
     public static function mitStatusQuery(DatabaseInterface $db): DatabaseQuery
     {

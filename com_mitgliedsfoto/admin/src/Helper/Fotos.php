@@ -36,7 +36,7 @@ final class Fotos
      *
      * @throws  FotoException
      */
-    public static function anlegen(string $mitgliedsnr, string $status, string $dateiname, ?int $userId): void
+    public static function anlegen(string $mitgliedsnr, string $status, string $dateiname, ?int $userId, array $zusatz = []): void
     {
         $db   = Factory::getContainer()->get(DatabaseInterface::class);
         $jetzt = Factory::getDate()->toSql();
@@ -48,6 +48,13 @@ final class Fotos
             'einwilligung_am' => $jetzt,
             'erfasst_von'     => $userId,
         ];
+
+        // Nur bei Erfassung ohne Joomla-Eintrag: Name/Geburtsdatum aus der Eingabe, Kennzeichen „geprüft“.
+        foreach (['vorname', 'nachname', 'geburtsdatum', 'geprueft'] as $feld) {
+            if (\array_key_exists($feld, $zusatz)) {
+                $zeile->$feld = $zusatz[$feld];
+            }
+        }
 
         try {
             $db->insertObject('#__mitgliedsfoto', $zeile);
@@ -69,7 +76,27 @@ final class Fotos
     /** Foto-Datei wurde gelöscht (Datenschutz); Zeile bleibt, damit nicht erneut eingereicht wird. */
     public static function alsGeloeschtMarkieren(string $mitgliedsnr): void
     {
-        self::setzen($mitgliedsnr, ['geloescht_am' => Factory::getDate()->toSql(), 'dateiname' => null]);
+        self::setzen($mitgliedsnr, ['geloescht_am' => Factory::getDate()->toSql(), 'dateiname' => null, 'geburtsdatum' => null]);
+    }
+
+    public static function bestaetigen(string $mitgliedsnr): void
+    {
+        self::setzen($mitgliedsnr, ['geprueft' => 1]);
+    }
+
+    /** @return  object[]  Einträge ohne Joomla-Mitgliedsdatensatz (Name in der eigenen Tabelle) */
+    public static function freieEintraege(): array
+    {
+        $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->getQuery(true)
+            ->select('*')
+            ->from($db->quoteName('#__mitgliedsfoto'))
+            ->where($db->quoteName('vorname') . ' IS NOT NULL')
+            ->order($db->quoteName('geprueft') . ' ASC')
+            ->order($db->quoteName('nachname') . ' ASC')
+            ->order($db->quoteName('vorname') . ' ASC');
+
+        return $db->setQuery($query)->loadObjectList() ?: [];
     }
 
     public static function mailGesendet(string $mitgliedsnr): void

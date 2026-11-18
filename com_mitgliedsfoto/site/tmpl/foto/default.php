@@ -33,23 +33,43 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         <div class="alert alert-info"><?php echo Text::_('COM_MITGLIEDSFOTO_BEREITS'); ?></div>
 
     <?php elseif ($this->zustand === 'ident') : ?>
-        <?php if ($this->geburtsdatumMoeglich) : ?>
-            <p><?php echo Text::_('COM_MITGLIEDSFOTO_IDENT_INTRO'); ?></p>
-            <form method="post" action="<?php echo $e($this->identUrl); ?>" class="mb-3" style="max-width:28rem">
-                <div class="mb-3">
-                    <label class="form-label" for="mf-nr"><?php echo Text::_('COM_MITGLIEDSFOTO_MITGLIEDSNR'); ?></label>
-                    <input class="form-control" id="mf-nr" name="mitgliedsnr" type="text" inputmode="numeric" autocomplete="off" maxlength="50" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" for="mf-gb"><?php echo Text::_('COM_MITGLIEDSFOTO_GEBURTSDATUM'); ?></label>
-                    <input class="form-control" id="mf-gb" name="geburtsdatum" type="text" inputmode="numeric" placeholder="TT.MM.JJJJ" autocomplete="off" maxlength="10" required>
-                </div>
-                <?php echo HTMLHelper::_('form.token'); ?>
-                <button class="btn btn-primary" type="submit"><?php echo Text::_('COM_MITGLIEDSFOTO_WEITER'); ?></button>
-            </form>
-        <?php else : ?>
-            <div class="alert alert-info"><?php echo Text::_('COM_MITGLIEDSFOTO_NUR_MIT_LINK'); ?></div>
-        <?php endif; ?>
+        <p><?php echo Text::_('COM_MITGLIEDSFOTO_IDENT_INTRO'); ?></p>
+        <form method="post" action="<?php echo $e($this->identUrl); ?>" class="mb-3" style="max-width:32rem" autocomplete="off">
+            <div class="mb-3">
+                <label class="form-label" for="mf-nr"><?php echo Text::_('COM_MITGLIEDSFOTO_MITGLIEDSNR'); ?> *</label>
+                <input class="form-control" id="mf-nr" name="mitgliedsnr" type="text" inputmode="numeric" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9._/\-]{0,49}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="mf-vn"><?php echo Text::_('COM_MITGLIEDSFOTO_VORNAME'); ?> *</label>
+                <input class="form-control" id="mf-vn" name="vorname" type="text" maxlength="100" autocomplete="given-name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="mf-nn"><?php echo Text::_('COM_MITGLIEDSFOTO_NACHNAME'); ?> *</label>
+                <input class="form-control" id="mf-nn" name="nachname" type="text" maxlength="100" autocomplete="family-name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="mf-gb"><?php echo Text::_('COM_MITGLIEDSFOTO_GEBURTSDATUM'); ?> *</label>
+                <input class="form-control" id="mf-gb" name="geburtsdatum" type="text" inputmode="numeric" placeholder="TT.MM.JJJJ" maxlength="10" pattern="\d{1,2}\.\d{1,2}\.\d{4}" required>
+                <div class="form-text"><?php echo Text::_('COM_MITGLIEDSFOTO_GEBURTSDATUM_HINWEIS'); ?></div>
+            </div>
+            <?php echo HTMLHelper::_('form.token'); ?>
+            <button class="btn btn-primary" type="submit"><?php echo Text::_('COM_MITGLIEDSFOTO_WEITER'); ?></button>
+        </form>
+
+    <?php elseif ($this->zustand === 'frei') : ?>
+        <p class="lead">
+            <?php echo Text::sprintf('COM_MITGLIEDSFOTO_HALLO', $e($this->mitglied->vorname . ' ' . $this->mitglied->nachname), $e($this->mitglied->nr)); ?>
+        </p>
+        <div class="alert alert-info"><?php echo Text::_('COM_MITGLIEDSFOTO_FREI_HINWEIS'); ?></div>
+        <?php echo LayoutHelper::render('uploader', [
+            'url'          => $this->submitUrl . (str_contains($this->submitUrl, '?') ? '&' : '?') . 'task=foto.absenden',
+            'felder'       => ['frei' => 1],
+            'binIch'       => true,
+            'einwilligung' => $this->einwilligung,
+            'absendenText' => Text::_('COM_MITGLIEDSFOTO_ABSENDEN'),
+            'minBreite'    => (int) Einstellungen::get('min_breite', 360),
+            'minHoehe'     => (int) Einstellungen::get('min_hoehe', 480),
+        ], JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/layouts'); ?>
 
     <?php else : ?>
         <p class="lead">

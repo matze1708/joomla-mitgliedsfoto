@@ -19,10 +19,11 @@ use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Fotos;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Mitglieder;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Token;
+use SvAlzey\Component\Mitgliedsfoto\Site\Controller\FotoController;
 
 class HtmlView extends BaseHtmlView
 {
-    /** ident | ungueltig | gesperrt | bereits | formular | nicht_konfiguriert */
+    /** ident | frei | ungueltig | gesperrt | bereits | formular | nicht_konfiguriert */
     public string $zustand = 'ident';
 
     public ?object $mitglied = null;
@@ -51,6 +52,17 @@ class HtmlView extends BaseHtmlView
 
         if (!Mitglieder::konfiguriert()) {
             $this->zustand = 'nicht_konfiguriert';
+        } elseif ($nr === '' && $token === '' && $input->get->getInt('frei') === 1) {
+            // QR-Weg mit unbekannter Mitgliedsnummer: Daten aus der Session, Foto wird „unbestätigt“.
+            $daten = FotoController::freieDaten($app);
+
+            if ($daten && !Mitglieder::finden($daten['nr']) && !Fotos::finden($daten['nr'])) {
+                $this->zustand      = 'frei';
+                $this->mitglied     = (object) ['nr' => $daten['nr'], 'vorname' => $daten['vorname'], 'nachname' => $daten['nachname']];
+                $this->einwilligung = self::einwilligungsText();
+            } else {
+                $this->zustand = 'ident';
+            }
         } elseif ($nr === '' && $token === '') {
             $this->zustand = 'ident';
         } elseif (Begrenzung::blockiert()) {

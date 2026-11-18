@@ -13,6 +13,7 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Controller;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einreichung;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\FotoException;
@@ -63,6 +64,70 @@ class FotoController extends BaseController
         } catch (\Throwable $e) {
             $this->json(false, Text::_('COM_MITGLIEDSFOTO_ERR_ALLGEMEIN'));
         }
+    }
+
+    /** Vorstandserfassung ohne Joomla-Eintrag (JSON, per fetch). */
+    public function erfassenFrei(): void
+    {
+        $input = $this->app->getInput()->post;
+
+        try {
+            if (!Session::checkToken('post')) {
+                throw new FotoException('JINVALID_TOKEN_NOTICE');
+            }
+
+            $nr       = trim($input->getString('mitgliedsnr', ''));
+            $vorname  = Eingabe::name(mb_substr($input->getString('vorname', ''), 0, 120));
+            $nachname = Eingabe::name(mb_substr($input->getString('nachname', ''), 0, 120));
+            $gebText  = trim($input->getString('geburtsdatum', ''));
+            $datum    = $gebText === '' ? null : Eingabe::geburtsdatum($gebText);
+
+            if (!Mitglieder::nrGueltig($nr) || $vorname === null || $nachname === null || ($gebText !== '' && $datum === null)) {
+                throw new FotoException('COM_MITGLIEDSFOTO_ERR_EINGABE');
+            }
+
+            if (Mitglieder::finden($nr)) {
+                throw new FotoException('COM_MITGLIEDSFOTO_ERR_IN_JOOMLA');
+            }
+
+            if (!$input->getInt('einwilligung')) {
+                throw new FotoException('COM_MITGLIEDSFOTO_ERR_BESTAETIGUNG');
+            }
+
+            $datei    = Einreichung::uploadPfad($this->app->getInput()->files->get('foto', null, 'raw'));
+            $mitglied = (object) ['nr' => $nr, 'vorname' => $vorname, 'nachname' => $nachname, 'geburtsdatum' => $datum, 'geprueft' => 1];
+            $mailOk   = Einreichung::speichern($mitglied, $datei, 'vorstand', (int) $this->app->getIdentity()->id, true);
+
+            $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_OK_ERFASST', $vorname . ' ' . $nachname), 'success');
+
+            if (!$mailOk) {
+                $this->app->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_MAIL') . ' ' . Einreichung::$mailFehler, 'warning');
+            }
+
+            $this->json(true, '', \Joomla\CMS\Router\Route::_(self::LISTE, false));
+        } catch (FotoException $e) {
+            $this->json(false, Text::_($e->getMessage()));
+        } catch (\Throwable $e) {
+            $this->json(false, Text::_('COM_MITGLIEDSFOTO_ERR_ALLGEMEIN'));
+        }
+    }
+
+    /** Unbestätigte Einträge (QR-Code ohne Joomla-Eintrag) nach Prüfung freigeben. */
+    public function bestaetigen(): void
+    {
+        $this->checkToken();
+        $n = 0;
+
+        foreach ($this->auswahl() as $nr) {
+            $foto = Fotos::finden($nr);
+
+            if ($foto && !(int) $foto->geprueft) {
+                Fotos::bestaetigen($nr);
+                $n++;
+            }
+        }
+
+        $this->setRedirect(self::LISTE, Text::plural('COM_MITGLIEDSFOTO_N_BESTAETIGT', $n));
     }
 
     /** Foto ausliefern (nur mit Backend-Berechtigung; Ordner selbst ist nicht öffentlich). */
@@ -132,7 +197,7 @@ class FotoController extends BaseController
 
         foreach ($this->auswahl() as $nr) {
             $foto     = Fotos::finden($nr);
-            $mitglied = Mitglieder::finden($nr);
+            $mitglied = Mitglieder::oderFrei($nr);
 
             if (!$foto || !$mitglied || !$foto->dateiname) {
                 $fehler++;

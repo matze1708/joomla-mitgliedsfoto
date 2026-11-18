@@ -101,6 +101,57 @@ $labels = ['eingereicht' => 'bg-info', 'vorstand' => 'bg-primary'];
         <?php echo $this->pagination->getListFooter(); ?>
     <?php endif; ?>
 <?php endif; ?>
+    <?php if ($this->freie) : ?>
+        <h2 class="h4 mt-4"><?php echo Text::_('COM_MITGLIEDSFOTO_FREI_LISTE'); ?></h2>
+        <p class="text-muted small"><?php echo Text::_('COM_MITGLIEDSFOTO_FREI_LISTE_HINWEIS'); ?></p>
+        <table class="table table-striped align-middle" id="freieList">
+            <thead>
+                <tr>
+                    <td class="w-1"></td>
+                    <th scope="col"><?php echo Text::_('COM_MITGLIEDSFOTO_NACHNAME'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_MITGLIEDSFOTO_VORNAME'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_MITGLIEDSFOTO_MITGLIEDSNR'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_MITGLIEDSFOTO_GEBURTSDATUM'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_MITGLIEDSFOTO_FOTO'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_MITGLIEDSFOTO_STATUS'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($this->freie as $j => $f) :
+                $nrUrl = rawurlencode($f->mitgliedsnr);
+                ?>
+                <tr>
+                    <td class="text-center"><?php echo HTMLHelper::_('grid.id', 1000 + $j, $f->mitgliedsnr); ?></td>
+                    <th scope="row"><?php echo $e($f->nachname); ?></th>
+                    <td><?php echo $e($f->vorname); ?></td>
+                    <td><?php echo $e($f->mitgliedsnr); ?></td>
+                    <td><?php echo $e(\SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe::datumDeutsch($f->geburtsdatum)); ?></td>
+                    <td>
+                        <?php if ($f->dateiname && !$f->geloescht_am) : ?>
+                            <a href="<?php echo Route::_('index.php?option=com_mitgliedsfoto&task=foto.bild&nr=' . $nrUrl); ?>" target="_blank" rel="noopener">
+                                <img src="<?php echo Route::_('index.php?option=com_mitgliedsfoto&task=foto.bild&nr=' . $nrUrl); ?>"
+                                     alt="<?php echo $e($f->vorname . ' ' . $f->nachname); ?>" width="45" height="60" loading="lazy"
+                                     style="object-fit:cover;border:1px solid #bbb">
+                            </a>
+                        <?php elseif ($f->geloescht_am) : ?>
+                            <span class="text-muted small"><?php echo Text::sprintf('COM_MITGLIEDSFOTO_GELOESCHT_AM', $e($datum($f->geloescht_am, true))); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <span class="badge <?php echo $labels[$f->status] ?? 'bg-secondary'; ?>"><?php echo Text::_('COM_MITGLIEDSFOTO_STATUS_' . strtoupper($f->status)); ?></span>
+                        <?php if (!(int) $f->geprueft) : ?>
+                            <span class="badge bg-warning text-dark"><?php echo Text::_('COM_MITGLIEDSFOTO_UNBESTAETIGT'); ?></span>
+                        <?php endif; ?>
+                        <div class="small text-muted"><?php echo $e($zeit($f->eingereicht_am)); ?></div>
+                        <?php if (!$f->mail_gesendet_am && !$f->geloescht_am) : ?>
+                            <div class="small text-danger"><?php echo Text::_('COM_MITGLIEDSFOTO_MAIL_NICHT_GESENDET'); ?></div>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
     <?php if ($version = Einstellungen::version()) : ?>
         <p class="text-muted small text-end mt-3 mb-0">com_mitgliedsfoto <?php echo $e($version); ?></p>
     <?php endif; ?>
