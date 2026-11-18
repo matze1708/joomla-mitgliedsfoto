@@ -1,0 +1,1 @@
+-- 1.2.1: keine Schemaänderung (Versionsanzeige unter der Mitgliederliste)
