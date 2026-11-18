@@ -26,6 +26,7 @@ class Router extends RouterView
     public function __construct(SiteApplication $app, AbstractMenu $menu)
     {
         $this->registerView(new RouterViewConfiguration('foto'));
+        $this->registerView((new RouterViewConfiguration('vorstand'))->addLayout('erfassen')->addLayout('frei'));
 
         parent::__construct($app, $menu);
 

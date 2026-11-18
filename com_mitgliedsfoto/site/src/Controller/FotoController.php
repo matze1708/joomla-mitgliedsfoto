@@ -60,7 +60,7 @@ class FotoController extends BaseController
             return;
         }
 
-        $mitglied = Mitglieder::finden($nr);
+        $mitglied = Mitglieder::finden($nr, true);
 
         if ($mitglied) {
             $hatDatum  = trim((string) ($mitglied->geburtsdatum ?? '')) !== '';
@@ -78,7 +78,7 @@ class FotoController extends BaseController
             return;
         }
 
-        if (Fotos::finden($nr)) {
+        if (Fotos::finden($nr, true)) {
             Begrenzung::fehlversuch();
             $this->setRedirect($seite, Text::_('COM_MITGLIEDSFOTO_BEREITS'), 'notice');
 
@@ -126,7 +126,7 @@ class FotoController extends BaseController
                 // Daten stammen aus der Session (QR-Formular), nicht aus diesem Request.
                 $daten = self::freieDaten($this->app);
 
-                if (!$daten || Mitglieder::finden($daten['nr'])) {
+                if (!$daten || Mitglieder::finden($daten['nr'], true) || Fotos::finden($daten['nr'], true)) {
                     throw new FotoException('COM_MITGLIEDSFOTO_ERR_SITZUNG');
                 }
 

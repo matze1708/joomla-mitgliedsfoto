@@ -113,6 +113,12 @@ final class Mitglieder
         return array_values(array_slice(array_filter($werte, static fn ($w) => $w !== '' && mb_strlen($w) <= 100), 0, 10));
     }
 
+    /** Mitgliedsnummer ohne führende Nullen (für den Vergleich manueller Eingaben). */
+    public static function ohneNullen(string $nr): string
+    {
+        return ltrim(trim($nr), '0');
+    }
+
     public static function nrGueltig(string $nr): bool
     {
         return (bool) preg_match(self::NR_MUSTER, $nr);
@@ -217,7 +223,11 @@ final class Mitglieder
         return $query;
     }
 
-    public static function finden(string $mitgliedsnr): ?object
+    /**
+     * @param   bool  $ohneNullen  nur für manuelle Eingaben (QR-Formular, Vorstand): führende Nullen ignorieren,
+     *                             z. B. 99997855 = 0099997855. Persönliche Links prüfen exakt.
+     */
+    public static function finden(string $mitgliedsnr, bool $ohneNullen = false): ?object
     {
         $mitgliedsnr = trim($mitgliedsnr);
 
@@ -226,8 +236,15 @@ final class Mitglieder
         }
 
         $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $nrSql = 'TRIM(' . self::ausdruck($db, 'nr') . ')';
+
+        if ($ohneNullen) {
+            $nrSql       = "TRIM(LEADING '0' FROM " . $nrSql . ')';
+            $mitgliedsnr = self::ohneNullen($mitgliedsnr);
+        }
+
         $query = self::basisQuery($db)
-            ->where('TRIM(' . self::ausdruck($db, 'nr') . ') = :nr')
+            ->where($nrSql . ' = :nr')
             ->bind(':nr', $mitgliedsnr, ParameterType::STRING);
 
         $zeilen = $db->setQuery($query, 0, 2)->loadObjectList();
@@ -281,6 +298,27 @@ final class Mitglieder
             )
             ->order(self::ausdruck($db, 'nachname') . ' ASC')
             ->order(self::ausdruck($db, 'vorname') . ' ASC');
+    }
+
+    /** Suche nach Nachname, Vorname oder Mitgliedsnummer (Nummer auch ohne führende Nullen). */
+    public static function sucheAnwenden(DatabaseQuery $query, DatabaseInterface $db, string $suche): void
+    {
+        $suche = mb_substr(trim($suche), 0, 100);
+
+        if ($suche === '') {
+            return;
+        }
+
+        $like  = '%' . addcslashes($suche, '%_\\') . '%';
+        $like0 = '%' . addcslashes(self::ohneNullen($suche), '%_\\') . '%';
+        $query->where(
+            '(' . self::ausdruck($db, 'nachname') . ' LIKE :s1 OR '
+            . self::ausdruck($db, 'vorname') . ' LIKE :s2 OR '
+            . 'CONVERT(' . self::ausdruck($db, 'nr') . ' USING utf8mb4) LIKE :s3)'
+        )
+            ->bind(':s1', $like, ParameterType::STRING)
+            ->bind(':s2', $like, ParameterType::STRING)
+            ->bind(':s3', $like0, ParameterType::STRING);
     }
 
     /** @return  object[]  alle Mitglieder inkl. Fotostatus (status NULL = offen) */

@@ -11,7 +11,6 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Model;
 \defined('_JEXEC') or die;
 
 use Joomla\CMS\MVC\Model\ListModel;
-use Joomla\Database\ParameterType;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Mitglieder;
 
 /**
@@ -61,19 +60,7 @@ class MitgliederModel extends ListModel
                 ->where($db->quoteName('f.geloescht_am') . ' IS NULL');
         }
 
-        $suche = mb_substr(trim((string) $this->getState('filter.search')), 0, 100);
-
-        if ($suche !== '') {
-            $like = '%' . addcslashes($suche, '%_\\') . '%';
-            $query->where(
-                '(' . Mitglieder::ausdruck($db, 'nachname') . ' LIKE :s1 OR '
-                . Mitglieder::ausdruck($db, 'vorname') . ' LIKE :s2 OR '
-                . 'CONVERT(' . Mitglieder::ausdruck($db, 'nr') . ' USING utf8mb4) LIKE :s3)'
-            )
-                ->bind(':s1', $like, ParameterType::STRING)
-                ->bind(':s2', $like, ParameterType::STRING)
-                ->bind(':s3', $like, ParameterType::STRING);
-        }
+        Mitglieder::sucheAnwenden($query, $db, (string) $this->getState('filter.search'));
 
         return $query;
     }
