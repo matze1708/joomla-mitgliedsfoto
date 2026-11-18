@@ -54,7 +54,7 @@ final class Einreichung
      * @return  bool  true, wenn auch die Mail versendet wurde
      * @throws  FotoException
      */
-    public static function speichern(object $mitglied, string $tmpDatei, string $quelle, ?int $userId): bool
+    public static function speichern(object $mitglied, string $tmpDatei, string $quelle, ?int $userId, bool $ohneJoomla = false): bool
     {
         $nr = (string) $mitglied->nr;
 
@@ -66,7 +66,14 @@ final class Einreichung
         $dateiname = Dateiname::erzeugen((string) $mitglied->nachname, (string) $mitglied->vorname, $nr);
 
         // Erst die Zeile (Primärschlüssel = Schutz vor Doppel-Einreichung), dann die Datei.
-        Fotos::anlegen($nr, $quelle === 'vorstand' ? 'vorstand' : 'eingereicht', $dateiname, $userId);
+        $zusatz = $ohneJoomla ? [
+            'vorname'      => (string) $mitglied->vorname,
+            'nachname'     => (string) $mitglied->nachname,
+            'geburtsdatum' => $mitglied->geburtsdatum ?: null,
+            'geprueft'     => (int) ($mitglied->geprueft ?? 0),
+        ] : [];
+
+        Fotos::anlegen($nr, $quelle === 'vorstand' ? 'vorstand' : 'eingereicht', $dateiname, $userId, $zusatz);
 
         try {
             Speicher::schreiben($dateiname, $jpeg);

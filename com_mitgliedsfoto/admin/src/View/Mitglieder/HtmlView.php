@@ -17,6 +17,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\CMS\Toolbar\ToolbarHelper;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Fotos;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Mitglieder;
 
 class HtmlView extends BaseHtmlView
@@ -27,6 +28,9 @@ class HtmlView extends BaseHtmlView
     public $filterForm;
     public array $activeFilters = [];
     public bool $konfiguriert = false;
+
+    /** @var object[]  Einträge ohne Joomla-Mitgliedsdatensatz */
+    public array $freie = [];
 
     public function display($tpl = null)
     {
@@ -53,6 +57,12 @@ class HtmlView extends BaseHtmlView
             Factory::getApplication()->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_WEBROOT'), 'warning');
         }
 
+        // Einträge ohne Joomla-Datensatz (Vorstand frei erfasst bzw. QR-Code unbestätigt)
+        $this->freie = array_values(array_filter(
+            Fotos::freieEintraege(),
+            static fn ($f) => !Mitglieder::finden((string) $f->mitgliedsnr)
+        ));
+
         $this->addToolbar();
 
         parent::display($tpl);
@@ -64,6 +74,10 @@ class HtmlView extends BaseHtmlView
         $toolbar = Toolbar::getInstance('toolbar');
 
         if ($this->konfiguriert) {
+            $toolbar->linkButton('frei', 'COM_MITGLIEDSFOTO_FREI_BUTTON')
+                ->url('index.php?option=com_mitgliedsfoto&view=frei')->icon('icon-plus');
+            $toolbar->standardButton('bestaetigen', 'COM_MITGLIEDSFOTO_BESTAETIGEN', 'foto.bestaetigen')
+                ->icon('icon-check')->listCheck(true);
             $toolbar->standardButton('mailsenden', 'COM_MITGLIEDSFOTO_MAIL_ERNEUT', 'foto.mailsenden')
                 ->icon('icon-envelope')->listCheck(true);
             $toolbar->standardButton('zuruecksetzen', 'COM_MITGLIEDSFOTO_ZURUECKSETZEN', 'foto.zuruecksetzen')

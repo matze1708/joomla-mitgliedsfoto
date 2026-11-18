@@ -36,6 +36,8 @@ $wa->useScript('com_mitgliedsfoto.uploader')->useStyle('com_mitgliedsfoto.upload
         <?php endforeach; ?>
         <?php echo HTMLHelper::_('form.token'); ?>
 
+        <?php echo $d['zusatz'] ?? ''; // vom Aufrufer erzeugtes, bereits escaptes HTML (Eingabefelder) ?>
+
         <?php if (!empty($d['binIch'])) : ?>
             <div class="form-check mb-3">
                 <input class="form-check-input" type="checkbox" id="mf-binich" name="bin_ich" value="1" required>

@@ -6,13 +6,18 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  const b=await chromium.launch();const ctx=await b.newContext({acceptDownloads:true});const p=await ctx.newPage();
  const errs=[];p.on('pageerror',e=>errs.push(e.message));
  // --- QR-Weg
- await p.goto(SITE);
- await p.fill('#mf-nr','9001');await p.fill('#mf-gb','18.05.1980');await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);
+ const qr=async(nr,vn,nn,gb)=>{await p.goto(SITE);await p.fill('#mf-nr',nr);await p.fill('#mf-vn',vn);await p.fill('#mf-nn',nn);await p.fill('#mf-gb',gb);await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);};
+ await qr('9001','Jörg','Müller-Groß','18.05.1980');
  ok('QR: falsches Geburtsdatum -> generische Meldung',(await p.content()).includes('konnten nicht bestätigt werden'));
- await p.fill('#mf-nr',"9001' OR '1'='1");await p.fill('#mf-gb','17.05.1980');await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);
- ok('QR: SQL-Injection-Versuch -> generische Meldung',(await p.content()).includes('konnten nicht bestätigt werden'));
- await p.fill('#mf-nr','9001');await p.fill('#mf-gb','17.05.1980');await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);
- ok('QR: richtige Daten (UTC-Kalenderwert) -> persönlicher Link',/m=9001&t=[0-9a-f]{64}/.test(p.url()));
+ await qr("9001' OR '1'='1",'Jörg','Müller-Groß','17.05.1980');
+ ok('QR: SQL-Injection-Versuch -> Eingabe abgelehnt',(await p.content()).includes('prüfen Sie Ihre Eingaben'));
+ await qr('9001','Hans','Müller-Groß','17.05.1980');
+ ok('QR: bekannte Nr, falscher Name -> generische Meldung',(await p.content()).includes('konnten nicht bestätigt werden'));
+ await qr('9001','<script>','Müller','17.05.1980');
+ ok('QR: HTML im Namen -> Eingabe abgelehnt',(await p.content()).includes('prüfen Sie Ihre Eingaben')&&!(await p.content()).includes('<script>M'));
+ sql("DELETE FROM jos_mitgliedsfoto_versuche");
+ await qr('9001','joerg','mueller gross','17.05.1980');
+ ok('QR: richtige Daten (Schreibweise egal) -> persönlicher Link',/m=9001&t=[0-9a-f]{64}/.test(p.url()));
  const link=p.url();
  ok('Name angezeigt',(await p.content()).includes('Jörg Müller-Groß'));
  ok('noindex gesetzt',(await p.content()).includes('noindex'));
@@ -62,11 +67,31 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('XSS im Parameter nicht reflektiert',!(await p.content()).includes('<script>alert(1)'));
  // --- Rate-Limit
  sql("DELETE FROM jos_mitgliedsfoto_versuche");
- for(let i=0;i<6;i++){await p.goto(SITE);await p.fill('#mf-nr','9002');await p.fill('#mf-gb','01.01.2000');await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);}
+ for(let i=0;i<6;i++){await qr('9002','Anna','Schmidt','01.01.2000');}
  ok('Rate-Limit nach 5 Fehlversuchen',(await p.content()).includes('Zu viele Versuche'));
- await p.goto(SITE);await p.fill('#mf-nr','9002');await p.fill('#mf-gb','02.01.2012');await Promise.all([p.waitForNavigation({waitUntil:'load'}),p.click('button[type=submit]')]);
+ await qr('9002','Anna','Schmidt','02.01.2012');
  ok('Gesperrt auch mit richtigen Daten',!p.url().includes('&t='));
  ok('IP nur als Hash gespeichert',!sql("SELECT GROUP_CONCAT(ip_hash) FROM jos_mitgliedsfoto_versuche").includes('127.0.0.1'));
+ sql("DELETE FROM jos_mitgliedsfoto_versuche");
+ // --- QR mit unbekannter Mitgliedsnummer -> unbestätigt
+ await qr('8001','Paul','Neu','01.02.1990');
+ ok('QR unbekannt: Formular mit Hinweis',p.url().includes('frei=1')&&(await p.content()).includes('nicht automatisch zugeordnet')&&(await p.content()).includes('Paul Neu'));
+ await p.check('#mf-binich');await p.setInputFiles('.mf-file-datei','quer.jpg');
+ await p.waitForFunction(()=>!document.querySelector('.mf-absenden').disabled);
+ await p.check('#mf-einwilligung');await p.click('.mf-absenden');
+ await p.waitForSelector('.mf-fertig:not(.d-none)',{timeout:15000});
+ ok('QR unbekannt: Upload erfolgreich',(await p.locator('.mf-fertig').textContent()).includes('Vielen Dank'));
+ ok('QR unbekannt: Zeile unbestätigt mit Name/Geburtsdatum',sql("SELECT CONCAT_WS('|',status,geprueft,vorname,nachname,geburtsdatum,dateiname) FROM jos_mitgliedsfoto WHERE mitgliedsnr='8001'")==='eingereicht|0|Paul|Neu|1990-02-01|Neu_Paul_8001.jpg');
+ const m8001=fs.readdirSync(process.env.MAILS).map(f=>fs.readFileSync(process.env.MAILS+'/'+f,'utf8')).find(x=>x.includes('FOTO|8001'))||'';
+ ok('QR unbekannt: Mail mit Geprueft: nein + Geburtsdatum',m8001.includes('Geprueft: nein')&&m8001.includes('Geburtsdatum: 01.02.1990')&&m8001.includes('Quelle: web'));
+ await p.goto(SITE+'?frei=1');
+ ok('QR unbekannt: Sitzung danach verbraucht',(await p.locator('.mf-uploader').count())===0);
+ await qr('8001','Paul','Neu','01.02.1990');
+ ok('QR unbekannt: zweites Mal -> bereits eingereicht',(await p.content()).includes('bereits eingereicht'));
+ const fremd=await (await b.newContext()).newPage();await fremd.goto(SITE+'?frei=1');
+ ok('QR unbekannt: ?frei=1 ohne Sitzung -> nur Eingabeformular',(await fremd.locator('#mf-nr').count())===1&&(await fremd.locator('.mf-uploader').count())===0);
+ const mailCount=(()=>{const x=fs.readdirSync(process.env.MAILS).map(f=>fs.readFileSync(process.env.MAILS+'/'+f,'utf8'));return x.find(y=>y.includes('FOTO|9001'))||'';})();
+ ok('Mail Joomla-Mitglied: Geprueft: ja + Geburtsdatum aus Joomla',mailCount.includes('Geprueft: ja')&&mailCount.includes('Geburtsdatum: 17.05.1980'));
  sql("DELETE FROM jos_mitgliedsfoto_versuche");
  // --- Backend
  const a=await ctx.newPage();a.on('pageerror',e=>errs.push('admin: '+a.url()+' '+e.stack.split('\n').slice(0,3).join(' | ')));
@@ -77,7 +102,7 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('Liste: Jörg eingereicht mit Vorschau',liste.includes('Müller-Groß')&&liste.includes('task=foto.bild&amp;nr=9001'));
  ok('Liste: Anna offen + Foto erfassen',liste.includes('Schmidt')&&liste.includes('view=erfassen&amp;nr=9002'));
  ok('Liste: gesperrtes Konto (Karl) enthalten',liste.includes('Gesperrt'));
- ok('Liste: Konto ohne Nummer nicht enthalten',!liste.includes('Ohne'));
+ ok('Liste: Konto ohne Nummer nicht enthalten',!liste.includes('>Nummer<'));
  ok('Liste: Eintritt angezeigt',liste.includes('2010'));
  ok('Filter Austritt: ausgetreten (9004) nicht in Liste',!liste.includes('>9004<'));
  ok('Filter Austritt: Austritt in Zukunft (9005) in Liste',liste.includes('>9005<'));
@@ -93,11 +118,12 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('Suche',(await a.content()).includes('Schmidt')&&!(await a.content()).includes('Müller-Groß'));
  await Promise.all([a.waitForNavigation(),a.click('.js-stools-btn-clear')]);
  // Optionen öffnen + speichern
+ const schluesselVorher=sql("SELECT JSON_VALUE(params,'$.schluessel') FROM jos_extensions WHERE element='com_mitgliedsfoto'");
  await a.goto(B+'/administrator/index.php?option=com_config&view=component&component=com_mitgliedsfoto');
  ok('Optionen: Benutzerfelder in Auswahl',(await a.content()).includes('Mitgliedsnummer (mitgliedsnummer, text)'));
  await Promise.all([a.waitForNavigation(),a.click('button.button-save')]);
  ok('Optionen speichern ohne Fehler',(await a.content()).includes('Configuration saved')||(await a.content()).includes('gespeichert'));
- ok('Schlüssel nach Speichern unverändert',sql("SELECT JSON_VALUE(params,'$.schluessel') FROM jos_extensions WHERE element='com_mitgliedsfoto'")==='aac9b9961c2cd896c45515ac729ffe7eccba4fea0c3523576847596ff8871bde');
+ ok('Schlüssel nach Speichern unverändert',sql("SELECT JSON_VALUE(params,'$.schluessel') FROM jos_extensions WHERE element='com_mitgliedsfoto'")===schluesselVorher);
  // Vorstandserfassung
  await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto&view=erfassen&nr=9002');
  await a.setInputFiles('.mf-file-kamera','quer.jpg');
@@ -130,6 +156,26 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('Zurücksetzen: Zeile+Datei weg',(await a.content()).includes('zurückgesetzt')&&sql("SELECT COUNT(*) FROM jos_mitgliedsfoto WHERE mitgliedsnr='9001'")==='0'&&!fs.existsSync(datei));
  const csrf=await a.request.post(B+'/administrator/index.php?option=com_mitgliedsfoto&task=foto.zuruecksetzen',{form:{'cid[]':'9002'}});
  ok('Zurücksetzen ohne CSRF-Token abgelehnt',sql("SELECT COUNT(*) FROM jos_mitgliedsfoto WHERE mitgliedsnr='9002'")==='1');
+ // --- Ohne Joomla-Eintrag: Liste, bestätigen, freie Erfassung
+ await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto');
+ let l2=await a.content();
+ ok('Liste: Abschnitt ohne Joomla-Eintrag mit Paul (unbestätigt)',l2.includes('Ohne Joomla-Eintrag erfasst')&&l2.includes('>Paul<')&&l2.includes('unbestätigt'));
+ await a.check('input[name="cid[]"][value="8001"]');await Promise.all([a.waitForNavigation({waitUntil:'load'}),a.evaluate(()=>Joomla.submitbutton('foto.bestaetigen'))]);
+ ok('Als geprüft markieren',(await a.content()).includes('1 Eintrag als geprüft markiert')&&sql("SELECT geprueft FROM jos_mitgliedsfoto WHERE mitgliedsnr='8001'")==='1');
+ const frei=async(nr,vn,nn,gb)=>{await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto&view=frei');await a.waitForSelector('.mf-file-kamera',{state:'attached'});
+   await a.fill('#mf-mitgliedsnr',nr);await a.fill('#mf-vorname',vn);await a.fill('#mf-nachname',nn);await a.fill('#mf-geburtsdatum',gb);
+   await a.setInputFiles('.mf-file-kamera','quer.jpg');await a.waitForFunction(()=>!document.querySelector('.mf-absenden').disabled);await a.check('#mf-einwilligung');};
+ await frei('9002','Anna','Schmidt','');await a.click('.mf-absenden');await a.waitForSelector('.mf-alert:not(.d-none)');
+ ok('Freie Erfassung: Nr aus Joomla abgelehnt',(await a.locator('.mf-alert').innerText()).includes('in Joomla vorhanden'));
+ await frei('8002','Erika','Frei-Mustermann','03.04.1975');
+ await Promise.all([a.waitForURL(/view=mitglieder/,{timeout:15000,waitUntil:'load'}),a.click('.mf-absenden')]);
+ ok('Freie Erfassung: gespeichert + Meldung',(await a.content()).includes('Erika Frei-Mustermann wurde gespeichert'));
+ ok('Freie Erfassung: Zeile vorstand/geprüft',sql("SELECT CONCAT_WS('|',status,geprueft,vorname,nachname,geburtsdatum) FROM jos_mitgliedsfoto WHERE mitgliedsnr='8002'")==='vorstand|1|Erika|Frei-Mustermann|1975-04-03');
+ const m8002=fs.readdirSync(process.env.MAILS).map(f=>fs.readFileSync(process.env.MAILS+'/'+f,'utf8')).find(x=>x.includes('FOTO|8002'))||'';
+ ok('Freie Erfassung: Mail Quelle vorstand',m8002.includes('Quelle: vorstand')&&m8002.includes('Frei-Mustermann_Erika_8002.jpg'));
+ await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto');await a.check('input[name="cid[]"][value="8002"]');
+ await Promise.all([a.waitForNavigation({waitUntil:'load'}),a.evaluate(()=>Joomla.submitbutton('foto.mailsenden'))]);
+ ok('Freie Erfassung: Mail erneut senden',(await a.content()).includes('1 Mail gesendet'));
  await a.screenshot({path:'admin-liste.png',fullPage:true});
  await p.goto(link);await p.setInputFiles('.mf-file-datei','quer.jpg');await p.waitForTimeout(800);await p.screenshot({path:'site-form.png',fullPage:true});
  const eigene=errs.filter(e=>!e.includes('guidedtours'));ok('Keine JS-Fehler der Komponente '+JSON.stringify(eigene),eigene.length===0);

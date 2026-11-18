@@ -52,6 +52,28 @@ Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender
    (sonst würden Formular-Token und Namen zwischengespeichert).
 5. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
 
+## Wege zur Fotoerfassung
+
+| Weg | Wer | Prüfung | Ergebnis |
+|---|---|---|---|
+| Persönlicher Link `…/foto?m=…&t=…` (Newsletter/CSV-Export) | Mitglied, ohne Anmeldung | HMAC-Token | Status „eingereicht“ |
+| QR-Code `…/foto` – Mitgliedsnummer, Vorname, Nachname, Geburtsdatum | Mitglied, ohne Anmeldung | Nummer in Joomla bekannt: Name (und Geburtsdatum, falls hinterlegt) müssen passen; Nummer unbekannt: wird angenommen | „eingereicht“ bzw. **„unbestätigt“** |
+| Backend → „Foto erfassen“ | Vorstand | Joomla-Mitglied | „durch Vorstand erfasst“ |
+| Backend → „Ohne Joomla-Konto erfassen“ (auch am Smartphone) | Vorstand | – | „durch Vorstand erfasst“ |
+
+Einträge ohne Joomla-Datensatz stehen in einer eigenen Liste unter der Mitgliederliste; unbestätigte Einträge nach Prüfung
+markieren und „Als geprüft markieren“.
+
+**Mail-Body** (maschinenlesbar):
+```
+Mitgliedsnummer: <Nr>
+Vorname: <Vorname>
+Nachname: <Nachname>
+Quelle: web|vorstand
+Geprueft: ja|nein
+Geburtsdatum: TT.MM.JJJJ      (nur wenn bekannt)
+```
+
 ## Testanleitung
 
 1. **Link erzeugen**: Backend → Mitgliedsfoto → „Link-Export (alle, CSV)“ → Zeile eines Testmitglieds enthält

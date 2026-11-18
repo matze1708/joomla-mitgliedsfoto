@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS `#__mitgliedsfoto` (
   `erfasst_von` INT UNSIGNED NULL DEFAULT NULL,
   `mail_gesendet_am` DATETIME NULL DEFAULT NULL,
   `geloescht_am` DATETIME NULL DEFAULT NULL,
+  `vorname` VARCHAR(100) NULL DEFAULT NULL,
+  `nachname` VARCHAR(100) NULL DEFAULT NULL,
+  `geburtsdatum` DATE NULL DEFAULT NULL,
+  `geprueft` TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`mitgliedsnr`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
