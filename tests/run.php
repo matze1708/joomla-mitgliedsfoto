@@ -2,9 +2,9 @@
 // Einfacher Test der Joomla-unabhängigen Logik: php tests/run.php
 define('_JEXEC', 1);
 $h = __DIR__ . '/../com_mitgliedsfoto/admin/src/Helper/';
-foreach (['FotoException', 'Token', 'Dateiname', 'Bild', 'Mitglieder'] as $c) { require $h . $c . '.php'; }
+foreach (['FotoException', 'Token', 'Dateiname', 'Bild', 'Mitglieder', 'Eingabe', 'Druckexport'] as $c) { require $h . $c . '.php'; }
 
-use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\{Token, Dateiname, Bild, FotoException, Mitglieder};
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\{Token, Dateiname, Bild, FotoException, Mitglieder, Druckexport};
 
 $fehler = 0;
 function pruefe(string $name, bool $ok): void { global $fehler; echo ($ok ? "OK    " : "FEHLER") . " $name\n"; $fehler += $ok ? 0 : 1; }
@@ -76,6 +76,19 @@ pruefe('GIF abgelehnt', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGL
 $f = bild(456, 584); file_put_contents($f, "<?php system('id'); ?>", FILE_APPEND);
 $out = Bild::verarbeiten($f, 5000000);
 pruefe('Angehängter Code wird verworfen', !str_contains($out, '<?php'));
+
+// Druck-Export (ZIP mit XLSX + Fotos)
+if (class_exists(ZipArchive::class)) {
+    $jpeg = Bild::verarbeiten(bild(456, 584), 5000000);
+    $paket = Druckexport::paket([['0099997855', 'Jörg', 'Müller-Groß', '01.04.2010', 'Mueller-Gross_Joerg_0099997855.jpg']], ['Mueller-Gross_Joerg_0099997855.jpg' => $jpeg], Druckexport::liesmich(1));
+    $f = tempnam($tmp, 'mf'); file_put_contents($f, $paket);
+    $z = new ZipArchive(); $offen = $z->open($f) === true;
+    pruefe('Druckpaket: gültiges ZIP mit xlsx, Foto, LIESMICH', $offen && $z->locateName('druckdaten.xlsx') !== false && $z->getFromName('fotos/Mueller-Gross_Joerg_0099997855.jpg') === $jpeg && $z->locateName('LIESMICH.txt') !== false);
+    $x = tempnam($tmp, 'mf'); file_put_contents($x, $z->getFromName('druckdaten.xlsx')); $z->close();
+    $z = new ZipArchive(); $z->open($x); $blatt = (string) $z->getFromName('xl/worksheets/sheet1.xml');
+    pruefe('Druckpaket: Excel-Zeile mit führenden Nullen als Text', str_contains($blatt, '<t xml:space="preserve">0099997855</t>') && str_contains($blatt, 'Müller-Groß') && str_contains($blatt, 'Mueller-Gross_Joerg_0099997855.jpg'));
+    pruefe('Druckpaket: XML wohlgeformt', simplexml_load_string($blatt) !== false && simplexml_load_string((string) $z->getFromName('xl/styles.xml')) !== false);
+}
 
 echo $fehler ? "\n$fehler Fehler\n" : "\nAlle Tests bestanden\n";
 exit($fehler ? 1 : 0);

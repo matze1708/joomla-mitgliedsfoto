@@ -44,6 +44,7 @@ class MitgliederModel extends ListModel
             $db->quoteName('f.dateiname', 'dateiname'),
             $db->quoteName('f.mail_gesendet_am', 'mail_gesendet_am'),
             $db->quoteName('f.geloescht_am', 'geloescht_am'),
+            $db->quoteName('f.exportiert_am', 'exportiert_am'),
         ]);
 
         $status = (string) $this->getState('filter.status');

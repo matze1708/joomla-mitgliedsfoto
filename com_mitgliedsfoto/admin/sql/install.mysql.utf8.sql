@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `#__mitgliedsfoto` (
   `nachname` VARCHAR(100) NULL DEFAULT NULL,
   `geburtsdatum` DATE NULL DEFAULT NULL,
   `geprueft` TINYINT(1) NOT NULL DEFAULT 1,
+  `exportiert_am` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`mitgliedsnr`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
