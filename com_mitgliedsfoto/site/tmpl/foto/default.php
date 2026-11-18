@@ -74,8 +74,8 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
             'binIch'       => true,
             'einwilligung' => $this->einwilligung,
             'absendenText' => Text::_('COM_MITGLIEDSFOTO_ABSENDEN'),
-            'minBreite'    => (int) Einstellungen::get('min_breite', 360),
-            'minHoehe'     => (int) Einstellungen::get('min_hoehe', 480),
+            'minBreite'    => (int) Einstellungen::get('min_breite', 228),
+            'minHoehe'     => (int) Einstellungen::get('min_hoehe', 292),
         ], JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/layouts'); ?>
 
     <?php else : ?>
@@ -90,8 +90,8 @@ $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
             'binIch'       => true,
             'einwilligung' => $this->einwilligung,
             'absendenText' => Text::_('COM_MITGLIEDSFOTO_ABSENDEN'),
-            'minBreite'    => (int) Einstellungen::get('min_breite', 360),
-            'minHoehe'     => (int) Einstellungen::get('min_hoehe', 480),
+            'minBreite'    => (int) Einstellungen::get('min_breite', 228),
+            'minHoehe'     => (int) Einstellungen::get('min_hoehe', 292),
         ], JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/layouts'); ?>
     <?php endif; ?>
 </div>

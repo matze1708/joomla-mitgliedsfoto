@@ -1,0 +1,1 @@
+-- 1.6.0: keine Schemaänderung (Fotoformat 456x584 px @ 600 dpi = Fotofeld des Ausweises)

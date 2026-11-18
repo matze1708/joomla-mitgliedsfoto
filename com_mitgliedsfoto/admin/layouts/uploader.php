@@ -16,6 +16,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Bild;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 
 $d = $displayData;
@@ -31,7 +32,7 @@ $wa = Factory::getApplication()->getDocument()->getWebAssetManager();
 $wa->useScript('com_mitgliedsfoto.uploader')->useStyle('com_mitgliedsfoto.uploader.css');
 ?>
 <div class="mf-uploader" data-url="<?php echo htmlspecialchars($d['url'], ENT_QUOTES); ?>"
-     data-breite="600" data-hoehe="800"
+     data-breite="<?php echo Bild::BREITE; ?>" data-hoehe="<?php echo Bild::HOEHE; ?>"
      data-min-breite="<?php echo (int) $d['minBreite']; ?>" data-min-hoehe="<?php echo (int) $d['minHoehe']; ?>">
     <div class="mf-alert alert alert-danger d-none" role="alert" aria-live="assertive"></div>
 

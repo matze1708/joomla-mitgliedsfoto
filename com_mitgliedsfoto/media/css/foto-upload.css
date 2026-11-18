@@ -1,6 +1,6 @@
-.mf-uploader .mf-crop { max-width: 480px; aspect-ratio: 3 / 4; background: #f1f1f1; }
+.mf-uploader .mf-crop { max-width: 480px; aspect-ratio: 456 / 584; background: #f1f1f1; }
 .mf-uploader .mf-crop img { display: block; max-width: 100%; }
-.mf-uploader .mf-vorschau { width: 150px; height: 200px; overflow: hidden; border: 1px solid #aaa; background: #fff; }
+.mf-uploader .mf-vorschau { width: 152px; height: 195px; overflow: hidden; border: 1px solid #aaa; background: #fff; }
 .mf-uploader .mf-vorschau img { max-width: none; }
 .mf-uploader label.btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .mf-uploader label.btn:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
@@ -14,8 +14,8 @@
 .mf-ausweis-klein .mf-karte { width: min(46%, 180px); }
 .mf-karte img { display: block; width: 100%; height: auto; }
 .mf-k-fotofeld { position: absolute; left: 56.9%; top: 41.73%; width: 35.74%; height: 28.74%; overflow: hidden; background: #fff; }
-/* exakt 3:4 über die volle Feldbreite (Feld ist minimal breiter als 3:4) – vertikal zentriert */
-.mf-k-foto { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 3 / 4; transform: translateY(-50%); overflow: hidden;
+/* Foto im Format des Fotofelds (456:584 = 19,3 x 24,7 mm) */
+.mf-k-foto { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 456 / 584; transform: translateY(-50%); overflow: hidden;
   display: block; background: #fff; }
 .mf-k-foto span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   color: #8a8a8a; font-size: 6cqw; text-align: center; line-height: 1.2; padding: 0 4%; }

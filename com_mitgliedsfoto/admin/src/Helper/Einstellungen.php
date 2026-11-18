@@ -27,8 +27,8 @@ final class Einstellungen
     private const STANDARD = [
         'max_upload_kb'      => 8192,
         'ausweis_vorschau'   => 1,
-        'min_breite'         => 360,
-        'min_hoehe'          => 480,
+        'min_breite'         => 228,
+        'min_hoehe'          => 292,
         'ratelimit_versuche' => 5,
         'ratelimit_minuten'  => 15,
         'ds_speicherort'     => 'auf dem Server der Vereinshomepage und im Vereins-Postfach sowie in der Mitgliederverwaltung des Vereins',
