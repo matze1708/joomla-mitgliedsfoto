@@ -1,0 +1,1 @@
+-- 1.5.0: keine Schemaänderung (Ausweis-Vorschau, Texte in Du-Form)

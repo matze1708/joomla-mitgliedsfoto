@@ -50,6 +50,20 @@ final class Eingabe
         return $a !== 'x' && hash_equals($b, $a);
     }
 
+    /** Datum für die Anzeige (z. B. Eintritt): TT.MM.JJJJ, sonst Originaltext. */
+    public static function datumAnzeige(?string $wert): string
+    {
+        $wert = trim((string) $wert);
+
+        if ($wert === '' || str_starts_with($wert, '0000')) {
+            return '';
+        }
+
+        $iso = Mitglieder::normalisiereDatum(Mitglieder::utcInOrtszeit($wert));
+
+        return $iso !== null ? self::datumDeutsch($iso) : mb_substr($wert, 0, 30);
+    }
+
     public static function datumDeutsch(?string $iso): string
     {
         return ($iso && preg_match('/^(\\d{4})-(\\d{2})-(\\d{2})/', $iso, $m)) ? $m[3] . '.' . $m[2] . '.' . $m[1] : '';

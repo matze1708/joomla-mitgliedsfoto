@@ -27,6 +27,8 @@ $zusatz = $feld('mitgliedsnr', 'COM_MITGLIEDSFOTO_MITGLIEDSNR_PFLICHT', 'inputmo
 <?php echo LayoutHelper::render('uploader', [
     'url'          => Route::_('index.php?option=com_mitgliedsfoto&task=foto.erfassenFrei', false),
     'felder'       => [],
+    'ausweis'      => ['vorname' => '', 'nachname' => '', 'nr' => '', 'seit' => ''],
+
     'zusatz'       => $zusatz,
     'binIch'       => false,
     'einwilligung' => Text::_('COM_MITGLIEDSFOTO_EINWILLIGUNG_VORSTAND'),

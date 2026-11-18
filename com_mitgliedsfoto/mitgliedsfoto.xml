@@ -5,7 +5,7 @@
 	<creationDate>2026-11</creationDate>
 	<copyright>(C) 2026 Schützenverein Volker Alzey 1952 e.V.</copyright>
 	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
-	<version>1.4.0</version>
+	<version>1.5.0</version>
 	<description>COM_MITGLIEDSFOTO_XML_DESCRIPTION</description>
 	<namespace path="src">SvAlzey\Component\Mitgliedsfoto</namespace>
 	<scriptfile>script.php</scriptfile>
@@ -33,6 +33,7 @@
 
 	<media destination="com_mitgliedsfoto" folder="media">
 		<folder>css</folder>
+		<folder>images</folder>
 		<folder>js</folder>
 		<filename>joomla.asset.json</filename>
 	</media>

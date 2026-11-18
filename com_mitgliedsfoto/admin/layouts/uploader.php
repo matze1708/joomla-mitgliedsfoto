@@ -15,8 +15,13 @@
 use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Layout\LayoutHelper;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 
 $d = $displayData;
+
+// Ausweis-Vorschau (Rückseite mit Foto, Name, Nummer) – abschaltbar in den Optionen
+$ausweis = (array_key_exists('ausweis', $d) && (int) Einstellungen::get('ausweis_vorschau', 1)) ? (array) $d['ausweis'] : null;
 
 foreach (['JS_KEIN_BILD', 'JS_ZU_KLEIN', 'JS_FEHLER', 'JS_SENDET', 'JS_LADEN'] as $k) {
     Text::script('COM_MITGLIEDSFOTO_' . $k);
@@ -72,7 +77,13 @@ $wa->useScript('com_mitgliedsfoto.uploader')->useStyle('com_mitgliedsfoto.upload
                 </div>
                 <div class="col-12 col-md-4">
                     <div class="small fw-bold mb-1"><?php echo Text::_('COM_MITGLIEDSFOTO_VORSCHAU'); ?></div>
-                    <div class="mf-vorschau"></div>
+                    <?php if ($ausweis) : ?>
+                        <div class="mf-vorschau-karte">
+                            <?php echo LayoutHelper::render('ausweis', ['daten' => $ausweis, 'fotofeld' => true, 'klein' => true], __DIR__); ?>
+                        </div>
+                    <?php else : ?>
+                        <div class="mf-vorschau"></div>
+                    <?php endif; ?>
                     <p class="text-muted small mt-2"><?php echo Text::_('COM_MITGLIEDSFOTO_VORSCHAU_HINWEIS'); ?></p>
                 </div>
             </div>

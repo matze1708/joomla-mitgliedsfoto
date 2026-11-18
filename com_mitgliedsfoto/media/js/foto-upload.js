@@ -18,7 +18,7 @@
     const fertig = root.querySelector('.mf-fertig');
     const stage = root.querySelector('.mf-stage');
     const img = root.querySelector('.mf-bild');
-    const vorschau = root.querySelector('.mf-vorschau');
+    const vorschau = Array.from(root.querySelectorAll('.mf-vorschau, .mf-k-foto'));
     const absenden = root.querySelector('.mf-absenden');
     const breite = parseInt(root.dataset.breite, 10) || 600;
     const hoehe = parseInt(root.dataset.hoehe, 10) || 800;
@@ -37,6 +37,7 @@
 
     const aufraeumen = () => {
       if (cropper) { cropper.destroy(); cropper = null; }
+      root.querySelectorAll('.mf-k-foto').forEach((el) => el.classList.remove('mf-hat-bild'));
       if (objektUrl) { URL.revokeObjectURL(objektUrl); objektUrl = null; }
       absenden.disabled = true;
     };
@@ -64,6 +65,7 @@
           guides: false,
           preview: vorschau,
           ready() {
+            root.querySelectorAll('.mf-k-foto').forEach((el) => el.classList.add('mf-hat-bild'));
             const d = cropper.getData(true);
             if (d.width < minB || d.height < minH) {
               fehler(T('COM_MITGLIEDSFOTO_JS_ZU_KLEIN', 'Das Foto hat eine zu geringe Auflösung.'));
@@ -95,6 +97,16 @@
         laden(input.files && input.files[0]);
         input.value = ''; // gleiche Datei erneut wählbar (beliebig oft wiederholen)
       });
+    });
+
+    // Freie Erfassung: Eingaben (Vorname, Nachname, Nummer) live auf der Ausweis-Rückseite anzeigen
+    root.querySelectorAll('[data-mf-feld]').forEach((ziel) => {
+      const quelle = root.querySelector('#mf-' + ziel.dataset.mfFeld);
+      if (quelle) {
+        const setzen = () => { ziel.textContent = quelle.value; };
+        quelle.addEventListener('input', setzen);
+        setzen();
+      }
     });
 
     root.querySelector('[data-mf="links"]').addEventListener('click', () => cropper && cropper.rotate(-90));
