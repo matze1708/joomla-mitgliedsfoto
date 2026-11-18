@@ -4,3 +4,5 @@
 .mf-uploader .mf-vorschau img { max-width: none; }
 .mf-uploader label.btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .mf-uploader label.btn:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
+.mf-uploader .mf-btn-datei { background-color: #fff; color: #1f5f8b; border: 2px solid #1f5f8b; }
+.mf-uploader .mf-btn-datei:hover, .mf-uploader .mf-btn-datei:focus-within { background-color: #1f5f8b; color: #fff; }

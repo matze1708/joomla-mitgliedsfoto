@@ -45,6 +45,10 @@ class HtmlView extends BaseHtmlView
             }
         }
 
+        if ($this->konfiguriert && trim((string) Einstellungen::get('seiten_url')) === '' && !Einstellungen::menueintrag()) {
+            Factory::getApplication()->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_MENUE'), 'warning');
+        }
+
         if (Einstellungen::speicherordnerImWebroot()) {
             Factory::getApplication()->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_WEBROOT'), 'warning');
         }

@@ -1,0 +1,1 @@
+-- 1.2.3: keine Schemaänderung (Link über Menüeintrag, Warnung ohne Menüeintrag, Button-Stil)
