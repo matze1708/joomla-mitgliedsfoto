@@ -71,7 +71,7 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  // --- Backend
  const a=await ctx.newPage();a.on('pageerror',e=>errs.push('admin: '+a.url()+' '+e.stack.split('\n').slice(0,3).join(' | ')));
  await a.goto(B+'/administrator/index.php');
- await a.fill('#mod-login-username','admin');await a.fill('#mod-login-password','Test-Passwort-123!');await a.click('#btn-login-submit');
+ await a.fill('#mod-login-username','admin');await a.fill('#mod-login-password',(process.env.JOOMLA_ADMIN_PW||'Test-Passwort-123!'));await a.click('#btn-login-submit');
  await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto');
  const liste=await a.content();
  ok('Liste: Jörg eingereicht mit Vorschau',liste.includes('Müller-Groß')&&liste.includes('task=foto.bild&amp;nr=9001'));

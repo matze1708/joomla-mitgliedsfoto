@@ -46,7 +46,7 @@ Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender
    - **Mail**: Empfängeradresse (Vorschlag: `ausweisfoto@sv-alzey.de`, nicht `mitglieder@sv-alzey.de`).
    - **Datenschutzhinweis**: Speicherort-/Löschfrist-Texte und Link zur Datenschutzerklärung prüfen und anpassen (Vorschlagswerte!).
    - **Berechtigungen**: Aktion „Mitgliedsfotos verwalten“ der gewünschten Gruppe (Vorstand) erlauben (Super User hat sie immer).
-3. Menüeintrag anlegen: Menüs → (Menü) → Neuer Eintrag → Typ **Mitgliedsfoto → Foto einreichen**, Alias `foto`
+3. **Menüeintrag anlegen (Pflicht, sonst liefert `/foto` „404 Seite nicht gefunden“):** Menüs → (Menü) → Neuer Eintrag → Typ **Mitgliedsfoto → Foto einreichen**, Alias `foto`
    (Menü am besten „versteckt“, die Seite wird nur über Link/QR-Code erreicht).
 4. Falls das Plugin **System – Seitencache** aktiv ist: die Seite `/foto` dort ausschließen
    (sonst würden Formular-Token und Namen zwischengespeichert).
@@ -71,6 +71,15 @@ Automatische Tests:
 - `tests/e2e/joomla-e2e.js` – Browser-Test (Playwright) gegen eine echte Joomla-5.4-Instanz mit Apache/MariaDB:
   QR-Weg, Link, Upload, Angriffsversuche (PHP-Datei, JPEG mit Code, falsche Tokens/Nummern, XSS, CSRF), Rate-Limit,
   Mail, Backend-Liste, Filter Vereinsmitglied/Austritt, Optionen, Vorstandserfassung, Export, Zurücksetzen/Löschen.
+
+## Updates
+
+Die Komponente meldet neue Versionen automatisch im Joomla-Backend (System → Aktualisieren → Erweiterungen bzw. Hinweis im Dashboard).
+Joomla liest dazu `update.xml` aus dem neuesten GitHub-Release (`…/releases/latest/download/update.xml`) – das Repository muss dafür
+**öffentlich** sein. Das Update lässt sich per Klick installieren; Daten, Fotos und Optionen bleiben erhalten.
+
+Neue Version veröffentlichen: `<version>` in `com_mitgliedsfoto/mitgliedsfoto.xml` erhöhen (bei Datenbankänderungen zusätzlich
+`admin/sql/updates/mysql/<version>.sql` anlegen) und auf `master` mergen – die Action baut ZIP, `update.xml` und Release.
 
 ## Deinstallation
 

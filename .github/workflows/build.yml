@@ -40,6 +40,15 @@ jobs:
           ./build.sh
           cp dist/com_mitgliedsfoto.zip "dist/com_mitgliedsfoto-${{ steps.version.outputs.version }}.zip"
 
+      - name: Update-Datei für Joomla (update.xml)
+        run: |
+          V=${{ steps.version.outputs.version }}
+          php tools/update-xml.php "dist/com_mitgliedsfoto-$V.zip" \
+            "https://github.com/${{ github.repository }}/releases/download/v$V/com_mitgliedsfoto-$V.zip" \
+            "https://github.com/${{ github.repository }}/releases/tag/v$V" > dist/update.xml
+          xmllint --noout dist/update.xml
+          cat dist/update.xml
+
       - name: ZIP als Artefakt
         uses: actions/upload-artifact@v4
         with:
@@ -58,3 +67,4 @@ jobs:
           files: |
             dist/com_mitgliedsfoto.zip
             dist/com_mitgliedsfoto-${{ steps.version.outputs.version }}.zip
+            dist/update.xml
