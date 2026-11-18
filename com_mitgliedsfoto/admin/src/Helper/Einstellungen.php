@@ -140,11 +140,40 @@ final class Einstellungen
         $url = trim((string) self::get('seiten_url'));
 
         if ($url === '') {
-            $url = Route::link('site', 'index.php?option=com_mitgliedsfoto&view=foto', false, Route::TLS_IGNORE, true)
+            $itemid = self::menueintrag();
+            $url    = Route::link(
+                'site',
+                'index.php?option=com_mitgliedsfoto&view=foto' . ($itemid ? '&Itemid=' . $itemid : ''),
+                false,
+                Route::TLS_IGNORE,
+                true
+            )
                 ?: rtrim(Uri::root(), '/') . '/foto';
         }
 
         return self::$seitenUrl = $url;
+    }
+
+    /** ID des veröffentlichten Frontend-Menüeintrags „Foto einreichen“ (0 = keiner). */
+    public static function menueintrag(): int
+    {
+        try {
+            $db    = Factory::getContainer()->get(DatabaseInterface::class);
+            $link  = 'index.php?option=com_mitgliedsfoto&view=foto';
+            $query = $db->getQuery(true)
+                ->select($db->quoteName('id'))
+                ->from($db->quoteName('#__menu'))
+                ->where($db->quoteName('client_id') . ' = 0')
+                ->where($db->quoteName('published') . ' = 1')
+                ->where($db->quoteName('type') . " = 'component'")
+                ->where($db->quoteName('link') . ' = :link')
+                ->order($db->quoteName('id') . ' ASC')
+                ->bind(':link', $link);
+
+            return (int) $db->setQuery($query, 0, 1)->loadResult();
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     public static function linkFuer(string $mitgliedsnr): string

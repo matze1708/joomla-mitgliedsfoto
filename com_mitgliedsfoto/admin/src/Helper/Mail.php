@@ -18,9 +18,13 @@ use Joomla\CMS\Mail\MailerFactoryInterface;
  */
 final class Mail
 {
+    /** Technische Ursache des letzten Fehlschlags (nur für Admins/Log, nie im Frontend anzeigen). */
+    public static string $details = '';
+
     /** @throws  FotoException */
     public static function senden(object $mitglied, string $quelle, string $dateiname): void
     {
+        self::$details = '';
         $empfaenger = trim((string) Einstellungen::get('mail_empfaenger'));
         $pfad       = Speicher::pfad($dateiname);
 
@@ -30,6 +34,11 @@ final class Mail
 
         if (!is_file($pfad)) {
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_DATEI_FEHLT');
+        }
+
+        // Globale Konfiguration → Server → „Mails senden“ = Nein
+        if (!(int) Factory::getApplication()->get('mailonline', 1)) {
+            throw new FotoException('COM_MITGLIEDSFOTO_ERR_MAIL_AUS');
         }
 
         $body = implode("\n", [
@@ -48,12 +57,19 @@ final class Mail
             $mailer->addAttachment($pfad, $dateiname, 'base64', 'image/jpeg');
             $ergebnis = $mailer->Send();
         } catch (\Throwable $e) {
+            self::$details = self::kurz($e->getMessage());
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_MAIL');
         }
 
         if ($ergebnis !== true) {
+            self::$details = self::kurz((string) ($mailer->ErrorInfo ?? ''));
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_MAIL');
         }
+    }
+
+    private static function kurz(string $text): string
+    {
+        return mb_substr(trim((string) preg_replace('/\s+/u', ' ', strip_tags($text))), 0, 300);
     }
 
     /** Einzeilig, ohne Steuerzeichen (kein Header-/Body-Injection, Format bleibt parsebar). */

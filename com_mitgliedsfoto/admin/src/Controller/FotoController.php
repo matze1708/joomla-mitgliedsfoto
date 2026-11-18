@@ -54,7 +54,7 @@ class FotoController extends BaseController
             $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_OK_ERFASST', $mitglied->vorname . ' ' . $mitglied->nachname), 'success');
 
             if (!$mailOk) {
-                $this->app->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_MAIL'), 'warning');
+                $this->app->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_MAIL') . ' ' . Einreichung::$mailFehler, 'warning');
             }
 
             $this->json(true, '', \Joomla\CMS\Router\Route::_(self::LISTE, false));
@@ -136,17 +136,19 @@ class FotoController extends BaseController
 
             if (!$foto || !$mitglied || !$foto->dateiname) {
                 $fehler++;
+                $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_MAIL_FEHLER_MITGLIED', $nr, Text::_('COM_MITGLIEDSFOTO_ERR_DATEI_FEHLT')), 'warning');
                 continue;
             }
 
-            Einreichung::mailSenden($mitglied, $foto->status === 'vorstand' ? 'vorstand' : 'web', $foto->dateiname) ? $ok++ : $fehler++;
+            if (Einreichung::mailSenden($mitglied, $foto->status === 'vorstand' ? 'vorstand' : 'web', $foto->dateiname)) {
+                $ok++;
+            } else {
+                $fehler++;
+                $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_MAIL_FEHLER_MITGLIED', $nr, Einreichung::$mailFehler), 'warning');
+            }
         }
 
-        if ($fehler) {
-            $this->app->enqueueMessage(Text::plural('COM_MITGLIEDSFOTO_N_MAIL_FEHLER', $fehler), 'warning');
-        }
-
-        $this->setRedirect(self::LISTE, Text::plural('COM_MITGLIEDSFOTO_N_MAIL_GESENDET', $ok));
+        $this->setRedirect(self::LISTE, $ok ? Text::plural('COM_MITGLIEDSFOTO_N_MAIL_GESENDET', $ok) : null);
     }
 
     public function export(): void

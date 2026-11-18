@@ -51,7 +51,7 @@ $wa->useScript('com_mitgliedsfoto.uploader')->useStyle('com_mitgliedsfoto.upload
                     <?php echo Text::_('COM_MITGLIEDSFOTO_KAMERA'); ?>
                     <input type="file" class="mf-file-kamera visually-hidden" accept="image/*" capture="user">
                 </label>
-                <label class="btn btn-secondary mb-0">
+                <label class="btn btn-outline-primary mf-btn-datei mb-0">
                     <?php echo Text::_('COM_MITGLIEDSFOTO_DATEI'); ?>
                     <input type="file" class="mf-file-datei visually-hidden" accept="image/jpeg,image/png,image/webp,image/*">
                 </label>
