@@ -14,6 +14,7 @@ use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Router\Route;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 
 $e = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $datum = static function ($s, $tz = null) {
@@ -100,6 +101,9 @@ $labels = ['eingereicht' => 'bg-info', 'vorstand' => 'bg-primary'];
         <?php echo $this->pagination->getListFooter(); ?>
     <?php endif; ?>
 <?php endif; ?>
+    <?php if ($version = Einstellungen::version()) : ?>
+        <p class="text-muted small text-end mt-3 mb-0">com_mitgliedsfoto <?php echo $e($version); ?></p>
+    <?php endif; ?>
     <input type="hidden" name="task" value="">
     <input type="hidden" name="boxchecked" value="0">
     <?php echo HTMLHelper::_('form.token'); ?>

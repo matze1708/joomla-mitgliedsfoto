@@ -80,6 +80,28 @@ final class Einstellungen
         $db->setQuery($query)->execute();
     }
 
+    /** Installierte Version (aus dem Manifest-Cache in #__extensions). */
+    public static function version(): string
+    {
+        try {
+            $db      = Factory::getContainer()->get(DatabaseInterface::class);
+            $element = self::KOMPONENTE;
+            $typ     = 'component';
+            $query   = $db->getQuery(true)
+                ->select($db->quoteName('manifest_cache'))
+                ->from($db->quoteName('#__extensions'))
+                ->where($db->quoteName('element') . ' = :element')
+                ->where($db->quoteName('type') . ' = :typ')
+                ->bind(':element', $element)
+                ->bind(':typ', $typ);
+            $cache = json_decode((string) $db->setQuery($query)->loadResult(), true);
+
+            return \is_array($cache) ? (string) ($cache['version'] ?? '') : '';
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
     public static function maxBytes(): int
     {
         return max(100, (int) self::get('max_upload_kb', 8192)) * 1024;
