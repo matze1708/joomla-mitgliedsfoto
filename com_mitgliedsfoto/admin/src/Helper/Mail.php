@@ -36,6 +36,11 @@ final class Mail
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_DATEI_FEHLT');
         }
 
+        // Globale Konfiguration → Server → „Mails senden“ = Nein
+        if (!(int) Factory::getApplication()->get('mailonline', 1)) {
+            throw new FotoException('COM_MITGLIEDSFOTO_ERR_MAIL_AUS');
+        }
+
         $body = implode("\n", [
             'Mitgliedsnummer: ' . self::zeile($mitglied->nr),
             'Vorname: ' . self::zeile($mitglied->vorname),
