@@ -107,6 +107,38 @@ final class Fotos
         return $db->setQuery($query)->loadObjectList() ?: [];
     }
 
+    /**
+     * Druckfertige Einträge: Foto vorhanden, nicht gelöscht, geprüft.
+     *
+     * @param   string[]  $auswahl   nur diese Mitgliedsnummern (leer = alle noch nicht exportierten)
+     *
+     * @return  object[]
+     */
+    public static function druckfertig(array $auswahl = []): array
+    {
+        $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->getQuery(true)
+            ->select('*')
+            ->from($db->quoteName('#__mitgliedsfoto'))
+            ->where($db->quoteName('dateiname') . ' IS NOT NULL')
+            ->where($db->quoteName('geloescht_am') . ' IS NULL')
+            ->where($db->quoteName('geprueft') . ' = 1')
+            ->order($db->quoteName('mitgliedsnr') . ' ASC');
+
+        if ($auswahl) {
+            $query->whereIn($db->quoteName('mitgliedsnr'), array_values($auswahl), ParameterType::STRING);
+        } else {
+            $query->where($db->quoteName('exportiert_am') . ' IS NULL');
+        }
+
+        return $db->setQuery($query)->loadObjectList() ?: [];
+    }
+
+    public static function alsExportiertMarkieren(string $mitgliedsnr): void
+    {
+        self::setzen($mitgliedsnr, ['exportiert_am' => Factory::getDate()->toSql()]);
+    }
+
     public static function mailGesendet(string $mitgliedsnr): void
     {
         self::setzen($mitgliedsnr, ['mail_gesendet_am' => Factory::getDate()->toSql()]);

@@ -213,6 +213,27 @@ let fail=0;const ok=(n,c)=>{console.log((c?'OK    ':'FEHLER')+' '+n);if(!c)fail+
  ok('Vorstandsbereich frei: gespeichert',(await vs.content()).includes('Frieda Feld wurde gespeichert')&&sql("SELECT CONCAT(status,'/',geprueft) FROM jos_mitgliedsfoto WHERE mitgliedsnr='8030'")==='vorstand/1');
  const r403=await mg.evaluate(async()=>{const f=new FormData();f.append('nr','9003');f.append('einwilligung','1');const r=await fetch('/index.php?option=com_mitgliedsfoto&task=vorstand.erfassen&format=json',{method:'POST',body:f});return r.text();});
  ok('Vorstandsbereich: Upload ohne Berechtigung/Token abgelehnt',r403.includes('"ok":false'));
+ // --- Druck-Export
+ const {execSync:ex}=require('child_process');
+ sql("UPDATE jos_mitgliedsfoto SET geprueft=0 WHERE mitgliedsnr='8001'");
+ await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto');
+ const [dz]=await Promise.all([a.waitForEvent('download'),a.evaluate(()=>Joomla.submitbutton('foto.druckexport'))]);
+ const zp=await dz.path();
+ const liste1=ex(`unzip -Z1 ${zp}`).toString();
+ const blatt=ex(`unzip -p ${zp} druckdaten.xlsx > /tmp/mf-d.xlsx && unzip -p /tmp/mf-d.xlsx xl/worksheets/sheet1.xml`).toString();
+ const anzahl=Number(sql("SELECT COUNT(*) FROM jos_mitgliedsfoto WHERE dateiname IS NOT NULL AND geloescht_am IS NULL AND geprueft=1"));
+ ok('Druck-Export: ZIP mit druckdaten.xlsx + fotos/ ('+anzahl+' Karten)',liste1.includes('druckdaten.xlsx')&&(liste1.match(/^fotos\//gm)||[]).length===anzahl&&anzahl>0);
+ ok('Druck-Export: Excel enthält Nummer mit Nullen + Dateiname',blatt.includes('>0099997855<')&&blatt.includes('Backs_Stephan_0099997855.jpg'));
+ ok('Druck-Export: unbestätigter Eintrag (8001) nicht enthalten',!blatt.includes('Neu_Paul_8001.jpg')&&!liste1.includes('Neu_Paul_8001.jpg'));
+ ok('Druck-Export: exportiert_am gesetzt',sql("SELECT COUNT(*) FROM jos_mitgliedsfoto WHERE exportiert_am IS NOT NULL")===String(anzahl));
+ await a.goto(B+'/administrator/index.php?option=com_mitgliedsfoto');
+ ok('Liste zeigt „an Druck exportiert“',(await a.content()).includes('an Druck exportiert'));
+ await Promise.all([a.waitForNavigation({waitUntil:'load'}),a.evaluate(()=>Joomla.submitbutton('foto.druckexport'))]);
+ ok('Druck-Export erneut ohne Auswahl -> nichts Neues',(await a.content()).includes('Keine druckfertigen Fotos'));
+ await a.check('input[name="cid[]"][value="8002"]');
+ const [dz2]=await Promise.all([a.waitForEvent('download'),a.evaluate(()=>Joomla.submitbutton('foto.druckexport'))]);
+ const zl2=ex(`unzip -Z1 ${await dz2.path()}`).toString();
+ ok('Druck-Export mit Auswahl -> genau dieser Eintrag erneut',(zl2.match(/^fotos\//gm)||[]).length===1&&zl2.includes('Frei-Mustermann_Erika_8002.jpg'));
  await a.screenshot({path:'admin-liste.png',fullPage:true});
  await p.goto(link);await p.setInputFiles('.mf-file-datei','quer.jpg');await p.waitForTimeout(800);await p.screenshot({path:'site-form.png',fullPage:true});
  const eigene=errs.filter(e=>!e.includes('guidedtours'));ok('Keine JS-Fehler der Komponente '+JSON.stringify(eigene),eigene.length===0);

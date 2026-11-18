@@ -39,7 +39,7 @@ $zusatz = $feld('mitgliedsnr', 'COM_MITGLIEDSFOTO_MITGLIEDSNR_PFLICHT', 'inputmo
         'binIch'       => false,
         'einwilligung' => Text::_('COM_MITGLIEDSFOTO_EINWILLIGUNG_VORSTAND'),
         'absendenText' => Text::_('COM_MITGLIEDSFOTO_SPEICHERN'),
-        'minBreite'    => (int) Einstellungen::get('min_breite', 360),
-        'minHoehe'     => (int) Einstellungen::get('min_hoehe', 480),
+        'minBreite'    => (int) Einstellungen::get('min_breite', 228),
+        'minHoehe'     => (int) Einstellungen::get('min_hoehe', 292),
     ], JPATH_ADMINISTRATOR . '/components/com_mitgliedsfoto/layouts'); ?>
 </div>

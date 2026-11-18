@@ -1,5 +1,5 @@
 /**
- * Foto-Oberfläche: Auswahl/Kamera, Zuschnitt 3:4 (Cropper.js), Ausgabe 600x800 JPEG, Versand per fetch.
+ * Foto-Oberfläche: Auswahl/Kamera, Zuschnitt im Format des Ausweis-Fotofelds (Cropper.js), Ausgabe 456x584 JPEG (600 dpi), Versand per fetch.
  * @license GNU General Public License version 2 or later
  */
 (() => {
@@ -20,8 +20,8 @@
     const img = root.querySelector('.mf-bild');
     const vorschau = Array.from(root.querySelectorAll('.mf-vorschau, .mf-k-foto'));
     const absenden = root.querySelector('.mf-absenden');
-    const breite = parseInt(root.dataset.breite, 10) || 600;
-    const hoehe = parseInt(root.dataset.hoehe, 10) || 800;
+    const breite = parseInt(root.dataset.breite, 10) || 456;
+    const hoehe = parseInt(root.dataset.hoehe, 10) || 584;
     const minB = parseInt(root.dataset.minBreite, 10) || 0;
     const minH = parseInt(root.dataset.minHoehe, 10) || 0;
     let cropper = null;

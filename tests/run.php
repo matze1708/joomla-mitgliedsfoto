@@ -2,9 +2,9 @@
 // Einfacher Test der Joomla-unabhängigen Logik: php tests/run.php
 define('_JEXEC', 1);
 $h = __DIR__ . '/../com_mitgliedsfoto/admin/src/Helper/';
-foreach (['FotoException', 'Token', 'Dateiname', 'Bild', 'Mitglieder'] as $c) { require $h . $c . '.php'; }
+foreach (['FotoException', 'Token', 'Dateiname', 'Bild', 'Mitglieder', 'Eingabe', 'Druckexport'] as $c) { require $h . $c . '.php'; }
 
-use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\{Token, Dateiname, Bild, FotoException, Mitglieder};
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\{Token, Dateiname, Bild, FotoException, Mitglieder, Druckexport};
 
 $fehler = 0;
 function pruefe(string $name, bool $ok): void { global $fehler; echo ($ok ? "OK    " : "FEHLER") . " $name\n"; $fehler += $ok ? 0 : 1; }
@@ -46,32 +46,49 @@ function bild(int $w, int $h, string $typ = 'jpeg'): string {
     $im = imagecreatetruecolor($w, $h); imagefill($im, 0, 0, imagecolorallocate($im, 200, 50, 50));
     $f = tempnam(sys_get_temp_dir(), 'mf'); $typ === 'png' ? imagepng($im, $f) : imagejpeg($im, $f); return $f;
 }
-$ok = Bild::verarbeiten(bild(1200, 1600), 5000000);
+$ok = Bild::verarbeiten(bild(912, 1168), 5000000);
 $i = getimagesizefromstring($ok);
-pruefe('Re-Encode 600x800 JPEG', $i[0] === 600 && $i[1] === 800 && $i[2] === IMAGETYPE_JPEG);
-$i = getimagesizefromstring(Bild::verarbeiten(bild(450, 600), 5000000));
-pruefe('Kleineres JPEG -> 600x800', $i[0] === 600 && $i[1] === 800);
-pruefe('PNG abgelehnt (nur JPEG aus dem Browser)', wirft(fn() => Bild::verarbeiten(bild(600, 800, 'png'), 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
+pruefe('Re-Encode 456x584 JPEG (Fotofeld Ausweis)', $i[0] === 456 && $i[1] === 584 && $i[2] === IMAGETYPE_JPEG);
+pruefe('600 dpi im JPEG (JFIF)', substr($ok, 6, 5) === "JFIF\0" && ord($ok[13]) === 1 && unpack('n', substr($ok, 14, 2))[1] === 600 && unpack('n', substr($ok, 16, 2))[1] === 600);
+$gd = imagecreatefromstring($ok);
+pruefe('RGB (Truecolor, keine Palette/CMYK)', $gd !== false && imageistruecolor($gd));
+$i = getimagesizefromstring(Bild::verarbeiten(bild(300, 384), 5000000));
+pruefe('Kleineres JPEG -> 456x584', $i[0] === 456 && $i[1] === 584);
+pruefe('Altes Format 3:4 (600x800) passt nicht mehr ins Fotofeld', wirft(fn() => Bild::verarbeiten(bild(600, 800), 5000000), 'COM_MITGLIEDSFOTO_ERR_SEITENVERHAELTNIS'));
+pruefe('PNG abgelehnt (nur JPEG aus dem Browser)', wirft(fn() => Bild::verarbeiten(bild(456, 584, 'png'), 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
 pruefe('Riesenbild abgelehnt (Dekompressionsbombe)', wirft(fn() => Bild::verarbeiten(bild(3000, 4000), 50000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
 $f = tempnam($tmp, 'mf'); file_put_contents($f, "\xFF\xD8\xFF<?php system('id'); ?>");
 pruefe('JPEG-Magic mit PHP-Code abgelehnt', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
-$f = bild(600, 800); $j = file_get_contents($f);
+$f = bild(456, 584); $j = file_get_contents($f);
 file_put_contents($f, substr($j, 0, 2) . "\xFF\xFE\x00\x20<?php system('id'); ?>XXXXXXXXXX" . substr($j, 2)); // Code im JPEG-Kommentar
 $out = Bild::verarbeiten($f, 5000000);
 pruefe('PHP-Code im JPEG-Kommentar wird entfernt', !str_contains($out, '<?php') && !str_contains($out, 'system('));
-$im = imagecreatetruecolor(600, 800); $f = tempnam($tmp, 'mf'); imagejpeg($im, $f);
+$im = imagecreatetruecolor(456, 584); $f = tempnam($tmp, 'mf'); imagejpeg($im, $f);
 file_put_contents($f, substr(file_get_contents($f), 0, 2) . "\xFF\xE1\x00\x10Exif\x00\x00GPSDATA!" . substr(file_get_contents($f), 2));
 pruefe('EXIF/Metadaten entfernt', !str_contains(Bild::verarbeiten($f, 5000000), 'GPSDATA'));
-pruefe('Zu klein', wirft(fn() => Bild::verarbeiten(bild(150, 200), 5000000), 'COM_MITGLIEDSFOTO_ERR_ZU_KLEIN'));
+pruefe('Zu klein', wirft(fn() => Bild::verarbeiten(bild(150, 192), 5000000), 'COM_MITGLIEDSFOTO_ERR_ZU_KLEIN'));
 pruefe('Quer abgelehnt', wirft(fn() => Bild::verarbeiten(bild(800, 600), 5000000), 'COM_MITGLIEDSFOTO_ERR_SEITENVERHAELTNIS'));
-pruefe('Größenlimit', wirft(fn() => Bild::verarbeiten(bild(1200, 1600), 1000), 'COM_MITGLIEDSFOTO_ERR_GROESSE'));
+pruefe('Größenlimit', wirft(fn() => Bild::verarbeiten(bild(912, 1168), 1000), 'COM_MITGLIEDSFOTO_ERR_GROESSE'));
 $f = tempnam($tmp, 'mf'); file_put_contents($f, '<?php echo 1; ?>');
 pruefe('Kein Bild (PHP-Datei)', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
 $f = tempnam($tmp, 'mf'); file_put_contents($f, "GIF89a\x01\x00\x01\x00\x00\x00\x00;");
 pruefe('GIF abgelehnt', wirft(fn() => Bild::verarbeiten($f, 5000000), 'COM_MITGLIEDSFOTO_ERR_FORMAT'));
-$f = bild(600, 800); file_put_contents($f, "<?php system('id'); ?>", FILE_APPEND);
+$f = bild(456, 584); file_put_contents($f, "<?php system('id'); ?>", FILE_APPEND);
 $out = Bild::verarbeiten($f, 5000000);
 pruefe('Angehängter Code wird verworfen', !str_contains($out, '<?php'));
+
+// Druck-Export (ZIP mit XLSX + Fotos)
+if (class_exists(ZipArchive::class)) {
+    $jpeg = Bild::verarbeiten(bild(456, 584), 5000000);
+    $paket = Druckexport::paket([['0099997855', 'Jörg', 'Müller-Groß', '01.04.2010', 'Mueller-Gross_Joerg_0099997855.jpg']], ['Mueller-Gross_Joerg_0099997855.jpg' => $jpeg], Druckexport::liesmich(1));
+    $f = tempnam($tmp, 'mf'); file_put_contents($f, $paket);
+    $z = new ZipArchive(); $offen = $z->open($f) === true;
+    pruefe('Druckpaket: gültiges ZIP mit xlsx, Foto, LIESMICH', $offen && $z->locateName('druckdaten.xlsx') !== false && $z->getFromName('fotos/Mueller-Gross_Joerg_0099997855.jpg') === $jpeg && $z->locateName('LIESMICH.txt') !== false);
+    $x = tempnam($tmp, 'mf'); file_put_contents($x, $z->getFromName('druckdaten.xlsx')); $z->close();
+    $z = new ZipArchive(); $z->open($x); $blatt = (string) $z->getFromName('xl/worksheets/sheet1.xml');
+    pruefe('Druckpaket: Excel-Zeile mit führenden Nullen als Text', str_contains($blatt, '<t xml:space="preserve">0099997855</t>') && str_contains($blatt, 'Müller-Groß') && str_contains($blatt, 'Mueller-Gross_Joerg_0099997855.jpg'));
+    pruefe('Druckpaket: XML wohlgeformt', simplexml_load_string($blatt) !== false && simplexml_load_string((string) $z->getFromName('xl/styles.xml')) !== false);
+}
 
 echo $fehler ? "\n$fehler Fehler\n" : "\nAlle Tests bestanden\n";
 exit($fehler ? 1 : 0);

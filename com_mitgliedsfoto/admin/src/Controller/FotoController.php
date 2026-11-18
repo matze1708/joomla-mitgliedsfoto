@@ -12,6 +12,8 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Controller;
 
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Druckexport;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einreichung;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\FotoException;
@@ -141,6 +143,64 @@ class FotoController extends BaseController
         }
 
         $this->setRedirect(self::LISTE, $ok ? Text::plural('COM_MITGLIEDSFOTO_N_MAIL_GESENDET', $ok) : null);
+    }
+
+    /**
+     * Druckpaket (ZIP) für die Druckerei: druckdaten.xlsx + fotos/.
+     * Ohne Auswahl: alle druckfertigen, noch nicht exportierten Einträge. Mit Auswahl: genau diese (auch erneut).
+     */
+    public function druckexport(): void
+    {
+        $this->checkToken();
+
+        $auswahl = $this->auswahl();
+        $zeilen  = [];
+        $fotos   = [];
+        $fehlend = [];
+
+        foreach (Fotos::druckfertig($auswahl) as $foto) {
+            $mitglied = Mitglieder::oderFrei($foto->mitgliedsnr);
+            $pfad     = Speicher::pfad((string) $foto->dateiname);
+
+            if (!$mitglied || !is_file($pfad)) {
+                $fehlend[] = $foto->mitgliedsnr;
+                continue;
+            }
+
+            $zeilen[] = [
+                (string) $foto->mitgliedsnr,
+                (string) $mitglied->vorname,
+                (string) $mitglied->nachname,
+                Eingabe::datumAnzeige($mitglied->eintritt ?? ''),
+                (string) $foto->dateiname,
+            ];
+            $fotos[(string) $foto->dateiname] = (string) file_get_contents($pfad);
+        }
+
+        if ($fehlend) {
+            $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_DRUCK_FEHLEND', implode(', ', $fehlend)), 'warning');
+        }
+
+        if (!$zeilen) {
+            $this->setRedirect(self::LISTE, Text::_('COM_MITGLIEDSFOTO_DRUCK_LEER'), 'notice');
+
+            return;
+        }
+
+        $zip = Druckexport::paket($zeilen, $fotos, Druckexport::liesmich(\count($zeilen)));
+
+        foreach ($zeilen as $zeile) {
+            Fotos::alsExportiertMarkieren($zeile[0]);
+        }
+
+        $name = 'ausweisdruck-' . date('Y-m-d-His') . '-' . \count($zeilen) . '.zip';
+        $this->app->setHeader('Content-Type', 'application/zip', true);
+        $this->app->setHeader('Content-Disposition', 'attachment; filename="' . $name . '"', true);
+        $this->app->setHeader('Content-Length', (string) \strlen($zip), true);
+        $this->app->setHeader('Cache-Control', 'private, no-store', true);
+        $this->app->sendHeaders();
+        echo $zip;
+        $this->app->close();
     }
 
     public function export(): void

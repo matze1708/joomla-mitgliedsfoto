@@ -13,14 +13,20 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Helper;
 /**
  * Serverseitige Prüfung und Neu-Encoding des Fotos (GD). Gespeichert werden ausschließlich die von GD neu
  * erzeugten Pixel – nie die hochgeladenen Bytes. Eingebetteter Code, EXIF/Metadaten, Polyglott-Dateien o. Ä.
- * gehen dabei verloren. Akzeptiert wird nur, was der Browser nach dem Zuschnitt liefert: JPEG, 3:4, max. 1200x1600.
+ * gehen dabei verloren. Akzeptiert wird nur, was der Browser nach dem Zuschnitt liefert: JPEG im Seitenverhältnis des Ausweis-Fotofelds, max. 1200x1600.
  */
 final class Bild
 {
-    public const BREITE = 600;
-    public const HOEHE = 800;
-    public const MIN_BREITE = 300;
-    public const MIN_HOEHE = 400;
+    /**
+     * Druckformat für das Fotofeld des Ausweises (Kartendesign: 19,3 x 24,7 mm) bei 600 dpi – so kann die Druckerei
+     * das Foto ohne Umrechnung einsetzen (Retransfer-Farbdruck, RGB, 300–600 dpi).
+     */
+    public const BREITE = 456;
+    public const HOEHE = 584;
+    public const DPI = 600;
+    /** Untergrenze = 300 dpi im Fotofeld */
+    public const MIN_BREITE = 228;
+    public const MIN_HOEHE = 292;
     public const MAX_BREITE = 1200;
     public const MAX_HOEHE = 1600;
 
@@ -28,7 +34,7 @@ final class Bild
      * @param   string  $datei      Pfad der hochgeladenen Datei
      * @param   int     $maxBytes   Größenlimit
      *
-     * @return  string  JPEG-Binärdaten, 600x800
+     * @return  string  JPEG-Binärdaten, 456x584 px bei 600 dpi (RGB)
      * @throws  FotoException  (Sprachschlüssel)
      */
     public static function verarbeiten(string $datei, int $maxBytes): string
@@ -80,8 +86,8 @@ final class Bild
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_ZU_KLEIN');
         }
 
-        // Der Browser liefert bereits 3:4. Abweichungen > 3 % werden abgelehnt.
-        if (abs(($w / $h) - 0.75) > 0.03) {
+        // Der Browser liefert bereits das Seitenverhältnis des Fotofelds. Abweichungen > 3 % werden abgelehnt.
+        if (abs(($w / $h) - (self::BREITE / self::HOEHE)) > 0.03) {
             throw new FotoException('COM_MITGLIEDSFOTO_ERR_SEITENVERHAELTNIS');
         }
 
@@ -95,8 +101,13 @@ final class Bild
         imagefill($ziel, 0, 0, (int) imagecolorallocate($ziel, 255, 255, 255));
         imagecopyresampled($ziel, $quelle, 0, 0, 0, 0, self::BREITE, self::HOEHE, $w, $h);
 
+        // Auflösung im JPEG (JFIF) eintragen: 600 dpi -> 19,3 x 24,7 mm
+        if (\function_exists('imageresolution')) {
+            imageresolution($ziel, self::DPI, self::DPI);
+        }
+
         ob_start();
-        $ok = imagejpeg($ziel, null, 90);
+        $ok = imagejpeg($ziel, null, 92);
         $jpeg = (string) ob_get_clean();
 
         unset($quelle, $ziel);

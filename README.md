@@ -52,6 +52,27 @@ Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender
    (sonst würden Formular-Token und Namen zwischengespeichert).
 5. Sprachdateien liegen in `de-DE`; die Website muss Deutsch als Sprache verwenden.
 
+## Fotoformat (Kartendruck)
+
+Gespeichert und gemailt wird jedes Foto als **JPEG, RGB, 456 × 584 Pixel mit 600 dpi** – das entspricht exakt dem Fotofeld
+des Ausweisdesigns (19,3 × 24,7 mm). Damit erfüllt es die Vorgaben der Druckerei für den variablen Retransfer-Farbdruck
+(JPG/PNG, 300–600 dpi, RGB) und kann ohne Umrechnung eingesetzt werden. Der Zuschnitt im Browser verwendet dasselbe
+Seitenverhältnis; die Mindestauflösung des Ausschnitts entspricht 300 dpi (228 × 292 Pixel).
+
+## Druck-Export
+
+Backend → **„Druck-Export (ZIP)“** erzeugt das Paket für den variablen Kartendruck:
+
+- `druckdaten.xlsx` – eine Zeile je Karte: Mitgliedsnummer (als Text, führende Nullen bleiben), Vorname, Nachname,
+  Mitglied seit, Foto (= Dateiname)
+- `fotos/` – die Fotos, benannt wie in der Spalte „Foto“ (456 × 584 px, 600 dpi, RGB)
+- `LIESMICH.txt` – Kurzbeschreibung
+
+Ohne Auswahl werden alle druckfertigen Einträge exportiert, die noch nicht exportiert wurden (Foto vorhanden, nicht gelöscht,
+geprüft). Mit Auswahl genau die markierten Einträge – auch erneut. Der Exportzeitpunkt wird je Eintrag gespeichert und in der
+Liste angezeigt („an Druck exportiert …“). Hintergrundgrafik, Feldpositionen und Schriftangaben für die Druckerei kommen aus dem
+Kartendesign (Tomoschat Design).
+
 ## Ausweis-Vorschau
 
 Die Seiten zeigen Vorder- und Rückseite des neuen Mitgliedsausweises (Design: Tomoschat Design, `media/images/ausweis-*.webp`).

@@ -84,6 +84,8 @@ class HtmlView extends BaseHtmlView
                 ->icon('icon-undo')->listCheck(true);
             $toolbar->standardButton('loeschen', 'COM_MITGLIEDSFOTO_FOTO_LOESCHEN', 'foto.loeschen')
                 ->icon('icon-trash')->listCheck(true);
+            $toolbar->standardButton('druckexport', 'COM_MITGLIEDSFOTO_DRUCK_BUTTON', 'foto.druckexport')
+                ->icon('icon-print')->listCheck(false);
             $toolbar->standardButton('export', 'COM_MITGLIEDSFOTO_EXPORT_ALLE', 'foto.export')
                 ->icon('icon-download')->listCheck(false);
             $toolbar->standardButton('exportoffen', 'COM_MITGLIEDSFOTO_EXPORT_OFFENE', 'foto.exportOffene')

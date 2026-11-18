@@ -83,6 +83,7 @@ $labels = ['eingereicht' => 'bg-info', 'vorstand' => 'bg-primary'];
                     <td>
                         <span class="badge <?php echo $labels[$status] ?? 'bg-secondary'; ?>"><?php echo Text::_('COM_MITGLIEDSFOTO_STATUS_' . strtoupper($status)); ?></span>
                         <?php if ($m->eingereicht_am) : ?><div class="small text-muted"><?php echo $e($zeit($m->eingereicht_am)); ?></div><?php endif; ?>
+                        <?php if (!empty($m->exportiert_am)) : ?><div class="small text-success"><?php echo Text::sprintf('COM_MITGLIEDSFOTO_EXPORTIERT_AM', $e($zeit($m->exportiert_am))); ?></div><?php endif; ?>
                         <?php if ($m->status && !$m->mail_gesendet_am && !$m->geloescht_am) : ?>
                             <div class="small text-danger"><?php echo Text::_('COM_MITGLIEDSFOTO_MAIL_NICHT_GESENDET'); ?></div>
                         <?php endif; ?>
@@ -143,6 +144,7 @@ $labels = ['eingereicht' => 'bg-info', 'vorstand' => 'bg-primary'];
                             <span class="badge bg-warning text-dark"><?php echo Text::_('COM_MITGLIEDSFOTO_UNBESTAETIGT'); ?></span>
                         <?php endif; ?>
                         <div class="small text-muted"><?php echo $e($zeit($f->eingereicht_am)); ?></div>
+                        <?php if (!empty($f->exportiert_am)) : ?><div class="small text-success"><?php echo Text::sprintf('COM_MITGLIEDSFOTO_EXPORTIERT_AM', $e($zeit($f->exportiert_am))); ?></div><?php endif; ?>
                         <?php if (!$f->mail_gesendet_am && !$f->geloescht_am) : ?>
                             <div class="small text-danger"><?php echo Text::_('COM_MITGLIEDSFOTO_MAIL_NICHT_GESENDET'); ?></div>
                         <?php endif; ?>

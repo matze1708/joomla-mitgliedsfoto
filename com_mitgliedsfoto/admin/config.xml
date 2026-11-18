@@ -48,8 +48,8 @@
 	<fieldset name="foto" label="COM_MITGLIEDSFOTO_CFG_FOTO" description="COM_MITGLIEDSFOTO_CFG_FOTO_DESC">
 		<field name="speicherordner" type="text" pattern="^(/|[A-Za-z]:[\\/]).*$" label="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER" description="COM_MITGLIEDSFOTO_CFG_SPEICHERORDNER_DESC" default="" />
 		<field name="max_upload_kb" type="number" label="COM_MITGLIEDSFOTO_CFG_MAX_UPLOAD" default="8192" min="100" max="30000" filter="integer" />
-		<field name="min_breite" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_BREITE" description="COM_MITGLIEDSFOTO_CFG_MIN_DESC" default="360" min="150" max="600" filter="integer" />
-		<field name="min_hoehe" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_HOEHE" default="480" min="200" max="800" filter="integer" />
+		<field name="min_breite" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_BREITE" description="COM_MITGLIEDSFOTO_CFG_MIN_DESC" default="228" min="150" max="456" filter="integer" />
+		<field name="min_hoehe" type="number" label="COM_MITGLIEDSFOTO_CFG_MIN_HOEHE" default="292" min="190" max="584" filter="integer" />
 		<field name="ausweis_vorschau" type="radio" layout="joomla.form.field.radio.switcher" label="COM_MITGLIEDSFOTO_CFG_AUSWEIS_VORSCHAU" description="COM_MITGLIEDSFOTO_CFG_AUSWEIS_VORSCHAU_DESC" default="1" filter="integer">
 			<option value="0">JNO</option>
 			<option value="1">JYES</option>
