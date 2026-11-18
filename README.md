@@ -60,6 +60,14 @@ Voraussetzungen auf dem Server: Joomla 5.4, PHP ≥ 8.1 mit GD, funktionierender
 | QR-Code `…/foto` – Mitgliedsnummer, Vorname, Nachname, Geburtsdatum | Mitglied, ohne Anmeldung | Nummer in Joomla bekannt: Name (und Geburtsdatum, falls hinterlegt) müssen passen; Nummer unbekannt: wird angenommen | „eingereicht“ bzw. **„unbestätigt“** |
 | Backend → „Foto erfassen“ | Vorstand | Joomla-Mitglied | „durch Vorstand erfasst“ |
 | Backend → „Ohne Joomla-Konto erfassen“ (auch am Smartphone) | Vorstand | – | „durch Vorstand erfasst“ |
+| Frontend-Menüeintrag „Vorstand: Fotos erfassen“ (Suche, Foto erfassen, ohne Joomla-Konto erfassen) | angemeldeter Vorstand | Berechtigung „Mitgliedsfotos verwalten“ | „durch Vorstand erfasst“ |
+
+**Vorstandsbereich im Frontend:** Menüeintrag vom Typ *Mitgliedsfoto → Vorstand: Fotos erfassen* z. B. im versteckten Menü
+anlegen (Zugriffsebene „Registered“ oder „Special“). Gäste werden zum Login geleitet, angemeldete Benutzer ohne die Berechtigung
+„Mitgliedsfotos verwalten“ sehen nur einen Hinweis. Zurücksetzen, Löschen, Export und Mail erneut senden bleiben im Backend.
+
+**Führende Nullen:** Bei manuellen Eingaben (QR-Formular, Vorstandserfassung, Suche) werden führende Nullen ignoriert –
+`99997855` findet `0099997855`. Persönliche Links prüfen die Nummer exakt.
 
 Einträge ohne Joomla-Datensatz stehen in einer eigenen Liste unter der Mitgliederliste; unbestätigte Einträge nach Prüfung
 markieren und „Als geprüft markieren“.

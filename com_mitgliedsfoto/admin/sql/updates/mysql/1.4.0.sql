@@ -1,0 +1,1 @@
+-- 1.4.0: keine Schemaänderung (Vorstandsbereich im Frontend, führende Nullen bei manueller Eingabe)

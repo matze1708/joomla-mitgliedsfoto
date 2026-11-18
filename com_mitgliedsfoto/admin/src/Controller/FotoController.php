@@ -12,14 +12,13 @@ namespace SvAlzey\Component\Mitgliedsfoto\Administrator\Controller;
 
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
-use Joomla\CMS\Session\Session;
-use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Eingabe;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einreichung;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Einstellungen;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\FotoException;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Fotos;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Mitglieder;
 use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Speicher;
+use SvAlzey\Component\Mitgliedsfoto\Administrator\Helper\Vorstand;
 
 /**
  * Aktionen im Backend. Zugriff ist bereits im Dispatcher auf "mitgliedsfoto.verwalten" beschränkt.
@@ -31,85 +30,13 @@ class FotoController extends BaseController
     /** Vorstandserfassung (JSON, per fetch). */
     public function erfassen(): void
     {
-        $input = $this->app->getInput();
-
-        try {
-            if (!Session::checkToken('post')) {
-                throw new FotoException('JINVALID_TOKEN_NOTICE');
-            }
-
-            $mitglied = Mitglieder::finden(trim($input->post->getString('nr', '')));
-
-            if (!$mitglied) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_UNBEKANNT');
-            }
-
-            if (!$input->post->getInt('einwilligung')) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_BESTAETIGUNG');
-            }
-
-            $datei = Einreichung::uploadPfad($input->files->get('foto', null, 'raw'));
-
-            $mailOk = Einreichung::speichern($mitglied, $datei, 'vorstand', (int) $this->app->getIdentity()->id);
-
-            $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_OK_ERFASST', $mitglied->vorname . ' ' . $mitglied->nachname), 'success');
-
-            if (!$mailOk) {
-                $this->app->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_MAIL') . ' ' . Einreichung::$mailFehler, 'warning');
-            }
-
-            $this->json(true, '', \Joomla\CMS\Router\Route::_(self::LISTE, false));
-        } catch (FotoException $e) {
-            $this->json(false, Text::_($e->getMessage()));
-        } catch (\Throwable $e) {
-            $this->json(false, Text::_('COM_MITGLIEDSFOTO_ERR_ALLGEMEIN'));
-        }
+        Vorstand::json($this->app, Vorstand::erfassen($this->app, false, \Joomla\CMS\Router\Route::_(self::LISTE, false)));
     }
 
     /** Vorstandserfassung ohne Joomla-Eintrag (JSON, per fetch). */
     public function erfassenFrei(): void
     {
-        $input = $this->app->getInput()->post;
-
-        try {
-            if (!Session::checkToken('post')) {
-                throw new FotoException('JINVALID_TOKEN_NOTICE');
-            }
-
-            $nr       = trim($input->getString('mitgliedsnr', ''));
-            $vorname  = Eingabe::name(mb_substr($input->getString('vorname', ''), 0, 120));
-            $nachname = Eingabe::name(mb_substr($input->getString('nachname', ''), 0, 120));
-            $gebText  = trim($input->getString('geburtsdatum', ''));
-            $datum    = $gebText === '' ? null : Eingabe::geburtsdatum($gebText);
-
-            if (!Mitglieder::nrGueltig($nr) || $vorname === null || $nachname === null || ($gebText !== '' && $datum === null)) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_EINGABE');
-            }
-
-            if (Mitglieder::finden($nr)) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_IN_JOOMLA');
-            }
-
-            if (!$input->getInt('einwilligung')) {
-                throw new FotoException('COM_MITGLIEDSFOTO_ERR_BESTAETIGUNG');
-            }
-
-            $datei    = Einreichung::uploadPfad($this->app->getInput()->files->get('foto', null, 'raw'));
-            $mitglied = (object) ['nr' => $nr, 'vorname' => $vorname, 'nachname' => $nachname, 'geburtsdatum' => $datum, 'geprueft' => 1];
-            $mailOk   = Einreichung::speichern($mitglied, $datei, 'vorstand', (int) $this->app->getIdentity()->id, true);
-
-            $this->app->enqueueMessage(Text::sprintf('COM_MITGLIEDSFOTO_OK_ERFASST', $vorname . ' ' . $nachname), 'success');
-
-            if (!$mailOk) {
-                $this->app->enqueueMessage(Text::_('COM_MITGLIEDSFOTO_WARN_MAIL') . ' ' . Einreichung::$mailFehler, 'warning');
-            }
-
-            $this->json(true, '', \Joomla\CMS\Router\Route::_(self::LISTE, false));
-        } catch (FotoException $e) {
-            $this->json(false, Text::_($e->getMessage()));
-        } catch (\Throwable $e) {
-            $this->json(false, Text::_('COM_MITGLIEDSFOTO_ERR_ALLGEMEIN'));
-        }
+        Vorstand::json($this->app, Vorstand::erfassen($this->app, true, \Joomla\CMS\Router\Route::_(self::LISTE, false)));
     }
 
     /** Unbestätigte Einträge (QR-Code ohne Joomla-Eintrag) nach Prüfung freigeben. */
@@ -271,19 +198,5 @@ class FotoController extends BaseController
         $cid = (array) $this->app->getInput()->post->get('cid', [], 'array');
 
         return array_values(array_unique(array_filter(array_map(static fn ($v) => trim((string) $v), $cid), static fn ($v) => $v !== '')));
-    }
-
-    private function json(bool $ok, string $nachricht, string $weiter = ''): void
-    {
-        // Meldungen für die nächste Seite (nach dem Weiterleiten im Browser) in der Session ablegen.
-        if ($weiter !== '' && \count($this->app->getMessageQueue())) {
-            $this->app->getSession()->set('application.queue', $this->app->getMessageQueue());
-        }
-
-        $this->app->allowCache(false);
-        $this->app->setHeader('Content-Type', 'application/json; charset=utf-8', true);
-        $this->app->sendHeaders();
-        echo json_encode(['ok' => $ok, 'message' => $nachricht, 'redirect' => $weiter], JSON_UNESCAPED_UNICODE);
-        $this->app->close();
     }
 }

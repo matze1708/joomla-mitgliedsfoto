@@ -19,16 +19,24 @@ use Joomla\Database\ParameterType;
  */
 final class Fotos
 {
-    public static function finden(string $mitgliedsnr): ?object
+    /** @param  bool  $ohneNullen  nur für manuelle Eingaben: führende Nullen ignorieren */
+    public static function finden(string $mitgliedsnr, bool $ohneNullen = false): ?object
     {
         $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $spalte = $db->quoteName('mitgliedsnr');
+
+        if ($ohneNullen) {
+            $spalte      = "TRIM(LEADING '0' FROM " . $spalte . ')';
+            $mitgliedsnr = Mitglieder::ohneNullen($mitgliedsnr);
+        }
+
         $query = $db->getQuery(true)
             ->select('*')
             ->from($db->quoteName('#__mitgliedsfoto'))
-            ->where($db->quoteName('mitgliedsnr') . ' = :nr')
+            ->where($spalte . ' = :nr')
             ->bind(':nr', $mitgliedsnr, ParameterType::STRING);
 
-        return $db->setQuery($query)->loadObject() ?: null;
+        return $db->setQuery($query, 0, 1)->loadObject() ?: null;
     }
 
     /**

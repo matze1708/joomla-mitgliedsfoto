@@ -56,7 +56,7 @@ class HtmlView extends BaseHtmlView
             // QR-Weg mit unbekannter Mitgliedsnummer: Daten aus der Session, Foto wird „unbestätigt“.
             $daten = FotoController::freieDaten($app);
 
-            if ($daten && !Mitglieder::finden($daten['nr']) && !Fotos::finden($daten['nr'])) {
+            if ($daten && !Mitglieder::finden($daten['nr'], true) && !Fotos::finden($daten['nr'], true)) {
                 $this->zustand      = 'frei';
                 $this->mitglied     = (object) ['nr' => $daten['nr'], 'vorname' => $daten['vorname'], 'nachname' => $daten['nachname']];
                 $this->einwilligung = self::einwilligungsText();
